@@ -1,0 +1,2821 @@
+Sales Order : Line 4          Qoutation and Invoice : Line 777            Complaints:Line 1300          Review:1740          Sales Analysis:2176            Inventory Guard:2605
+
+
+_*Sales Order :*_
+{
+  "nodes": [
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1tDsJAkS1zccKbCahUo8F0hAnGCgJ6pTMDit979Ucsw4",
+          "mode": "list",
+          "cachedResultName": "Stocklist",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1tDsJAkS1zccKbCahUo8F0hAnGCgJ6pTMDit979Ucsw4/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1tDsJAkS1zccKbCahUo8F0hAnGCgJ6pTMDit979Ucsw4/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ProductName                                   ",
+              "lookupValue": "={{ $json.output.product_name }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -704,
+        384
+      ],
+      "id": "f9e9ab22-1fe3-486d-9f0d-ac612713cb69",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "RR9cDB7wNsNDx8Kl",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const firstItem = items[0].json;\n\nlet senderEmail = 'noreply@example.com';\n\nif (firstItem.fromEmail) {\n    senderEmail = firstItem.fromEmail;\n} else if (firstItem.from && Array.isArray(firstItem.from) && firstItem.from[0].address) {\n    senderEmail = firstItem.from[0].address;\n} else if (firstItem.from && typeof firstItem.from === 'string') {\n    const match = firstItem.from.match(/<(.+)>/);\n    if (match) senderEmail = match[1];\n} else if (firstItem.sender) {\n    senderEmail = firstItem.sender;\n}\n\nreturn [{ json: { ...firstItem, senderEmail } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        48,
+        528
+      ],
+      "id": "e49253bc-814e-4c7d-bbae-58bde1543901",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "jsCode": "const inputItems = $input.all();\nconst order = $(\"Basic LLM Chain\").first().json.output;\n\nreturn inputItems.map(item => {\n  const data = item.json;\n  \n  // Build the message using the structured data from the AI\n  const message = `Hello ${order.customer_name}, Thank you for your order! We have received your request for ${order.quantity} units of the ${order.product_name}. Your order is now being processed and will be shipped to ${order.shipping_address}. If you have any questions, please reply to this email. Thanks, Your E-commerce Team`;\n\n  return { json: { ...data, message } };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        112,
+        320
+      ],
+      "id": "654cdd62-d27e-4ef9-912d-35c2114b67e7",
+      "name": "Code in JavaScript1",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst firstItem = items[0].json;\nlet senderEmail = \"\";\n\n// --- 1. Handle Tally.so Webhook Data ---\n// Tally sends an array of fields in 'data.fields'\nif (firstItem.data && Array.isArray(firstItem.data.fields)) {\n  const emailField = firstItem.data.fields.find(f => \n    f.type === 'email' || \n    f.key?.toLowerCase().includes('email') || \n    f.label?.toLowerCase().includes('email')\n  );\n  senderEmail = emailField ? emailField.value : \"\";\n} \n\n// --- 2. Handle Gmail Trigger Data (Existing Logic) ---\nelse if (firstItem.from && Array.isArray(firstItem.from) && firstItem.from[0].address) {\n  senderEmail = firstItem.from[0].address;\n} \nelse if (firstItem.from && typeof firstItem.from === \"string\") {\n  const match = firstItem.from.match(/<(.+)>/);\n  senderEmail = match ? match[1] : firstItem.from;\n} \nelse if (firstItem.From && typeof firstItem.From === \"string\") {\n  const match = firstItem.From.match(/<(.+)>/);\n  senderEmail = match ? match[1] : firstItem.From;\n}\n\n// Return the original data plus the extracted senderEmail \n// so the rest of the workflow nodes can still see the raw input\nreturn [{ json: { ...firstItem, senderEmail } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1184,
+        384
+      ],
+      "id": "3f1cbf2e-82c2-4370-9954-f5a54bda3a99",
+      "name": "Precode Javascript"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n  \"parameters\": {\n    \"keepOnlySet\": false,\n    \"values\": {\n      \"string\": [\n        {\n          \"name\": \"senderEmail\",\n          \"value\": \"={{ $json.senderEmail }}\"\n        }\n      ]\n    },\n    \"options\": {}\n  },\n  \"name\": \"true set\",\n  \"type\": \"n8n-nodes-base.set\",\n  \"typeVersion\": 3.4,\n  \"id\": \"83df720f-6ac5-40a6-a3d1-79d6807313e1\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        704,
+        176
+      ],
+      "id": "866960dc-030d-4e53-8630-86db633024eb",
+      "name": "true set"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n  \"parameters\": {\n    \"keepOnlySet\": false,\n    \"values\": {\n      \"string\": [\n        {\n          \"name\": \"senderEmail\",\n          \"value\": \"={{ $json.senderEmail }}\"\n        }\n      ]\n    },\n    \"options\": {}\n  },\n  \"name\": \"false set\",\n  \"type\": \"n8n-nodes-base.set\",\n  \"typeVersion\": 3.4,\n  \"id\": \"82f654cf-5cee-4bc3-ba40-987200a8e5ea\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        608,
+        752
+      ],
+      "id": "c62dcdaf-9d6c-4aa6-8764-726c21ee8ce8",
+      "name": "false set"
+    },
+    {
+      "parameters": {
+        "jsCode": "const stockRows = $input.all().map(item => item.json);\nconst order = $(\"Basic LLM Chain\").first().json.output;\n\n// detect real header names dynamically\nconst productKey = Object.keys(stockRows[0]).find(k =>\n  k.trim() === \"ProductName\"\n);\n\nconst quantityKey = Object.keys(stockRows[0]).find(k =>\n  k.trim() === \"QuantityInStock\"\n);\n\nconst stockRow = stockRows.find(row =>\n  row[productKey]?.trim().toLowerCase() ===\n  order.product_name?.trim().toLowerCase()\n);\n\nif (!stockRow) {\n  return [{\n    json: {\n      order_product_name: order.product_name,\n      order_quantity: Number(order.quantity),\n      stock_product_name: null,\n      stock_quantity: 0,\n      productFound: false\n    }\n  }];\n}\n\nreturn [{\n  json: {\n    order_product_name: order.product_name,\n    order_quantity: Number(order.quantity),\n    stock_product_name: stockRow[productKey],\n    stock_quantity: Number(stockRow[quantityKey]),\n    productFound: true\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -512,
+        384
+      ],
+      "id": "10d7ed3c-85d3-46db-8fb6-3761b30bd63a",
+      "name": "loop try",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1clVno7_Hc7PRqdTHND8PwEYHUUzFix7a_OXtYFeTm4E",
+          "mode": "list",
+          "cachedResultName": "Customers",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1clVno7_Hc7PRqdTHND8PwEYHUUzFix7a_OXtYFeTm4E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1clVno7_Hc7PRqdTHND8PwEYHUUzFix7a_OXtYFeTm4E/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Quantity": "={{ $('Basic LLM Chain').first().json.output.quantity }}",
+            "Name": "={{ $('Basic LLM Chain').first().json.output.customer_name }}",
+            "Special Instruction": "={{ $('Basic LLM Chain').first().json.output.special_instructions }}",
+            "Email ": "={{ $('Precode Javascript').first().json.senderEmail }}",
+            "Product Name": "={{ $('Basic LLM Chain').first().json.output.product_name }}",
+            "Shipping Addres": "={{ $('Basic LLM Chain').first().json.output.shipping_address }}",
+            "Price of Product": "={{ $('Get row(s) in sheet').first().json.Price }}",
+            "Total Price": "={{ Number($('Get row(s) in sheet').first().json.Price) * Number($('loop try').item.json.order_quantity) }}\n"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Email ",
+              "displayName": "Email ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Product Name",
+              "displayName": "Product Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Quantity",
+              "displayName": "Quantity",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Shipping Addres",
+              "displayName": "Shipping Addres",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Special Instruction",
+              "displayName": "Special Instruction",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Price of Product",
+              "displayName": "Price of Product",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Total Price",
+              "displayName": "Total Price",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -112,
+        64
+      ],
+      "id": "4da3fd3a-6908-4d88-ab2a-23fd0ee24e46",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "RR9cDB7wNsNDx8Kl",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "1978aa1b-1b83-4d12-b4e2-74a6ef511f18",
+              "leftValue": "={{ $('Basic LLM Chain').all()[0].json.output.product_name}}",
+              "rightValue": "={{ $json.order_product_name }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "36124061-4989-44a7-b963-d93e29b2ada6",
+              "leftValue": "={{ $item(0).$node[\"Basic LLM Chain\"].json.output.quantity }}",
+              "rightValue": "={{ $json.stock_quantity }}",
+              "operator": {
+                "type": "number",
+                "operation": "lte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -288,
+        384
+      ],
+      "id": "92cdc7cd-b66d-4ba4-995f-77889cfe92bd",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Webhook').item.json.body.customer_email }}",
+        "subject": "=Order Confirmed: {{ $('Basic LLM Chain').first().json.output.product_name }}",
+        "message": "=Dear {{ $('Webhook').item.json.body.customer_name }},<br><br>Thank you for your recent order. We are pleased to confirm that we have received your request for {{ $('Basic LLM Chain').all()[0].json.output.quantity }} units of {{ $('Basic LLM Chain').all()[0].json.output.product_name }}.<br>Order Details:<br>• Product: {{ $('Basic LLM Chain').all()[0].json.output.product_name }}<br>• Quantity: {{ $('Basic LLM Chain').all()[0].json.output.quantity }}<br>\n• **Price per Unit:** ₹{{ $('Get row(s) in sheet').first().json.Price }}<br>\n• **Total Amount:** ₹{{ Number($('Get row(s) in sheet').first().json.Price) * Number($('loop try').item.json.order_quantity) }}<br><br>Your order is currently being processed. If you have any questions, please feel free to reply directly to this email.\n<br>✨ Recommended for you:\n{{ $('Basic LLM Chain1').item.json.text }}<br><br>Best regards,<br>The E-commerce Team",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        864,
+        336
+      ],
+      "id": "71e18b0c-0188-40d3-8870-aea25188df61",
+      "name": "Send a message2",
+      "webhookId": "042e3a88-d60e-4eff-948c-455201e94ff4",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "qArxkDXBnuNhnUXb",
+          "name": "Gmail account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Webhook').item.json.body.customer_email }}",
+        "subject": "=Out of Stock:{{ $('Basic LLM Chain').first().json.output.product_name }}",
+        "emailType": "text",
+        "message": "={{ $('Basic LLM Chain2').item.json.text }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        752,
+        560
+      ],
+      "id": "76ce1a74-4da1-42ab-8be3-dc0d63ccc52c",
+      "name": "Send a message3",
+      "webhookId": "2d229019-a019-428e-a53c-3a9cdf526e6e",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "qArxkDXBnuNhnUXb",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "tally-sales-order",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1408,
+        288
+      ],
+      "id": "90b00786-7595-4e30-a130-a421968cfcd8",
+      "name": "Webhook",
+      "webhookId": "d5ed104e-a7b6-436c-8f01-75b6d18c0462"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"product_name\": \"Ultrabook Pro\",\n  \"quantity\": 1,\n  \"customer_name\": \"John Smith\",\n  \"shipping_address\": \"123 Automation Drive, Tech City, 54321\",\n  \"special_instructions\": \"Please include a note with 'Happy Birthday!' on it.\"\n}",
+        "autoFix": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -944,
+        576
+      ],
+      "id": "f87a65e1-f529-4922-acfb-b8db442901f0",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Instructions:\n1. Ignore any HTML tags and extra formatting. Extract the **actual text content**.\n2. Extract the following information and return a JSON object with a single key \"output\":\n   - product_name\n   - quantity\n   - customer_name\n   - shipping_address\n   - special_instructions\n3. If any field is missing, use \"N/A\" for text fields and 0 for quantity.\n4. Return **only the JSON object**, nothing else.\n\nText to analyze:\n{{ $json.snippet || JSON.stringify($json.body) || JSON($json) }}",
+        "hasOutputParser": true,
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        -992,
+        384
+      ],
+      "id": "3e821e6a-4357-4904-b944-8d6c97dbba65",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=The customer just bought a {{ $json.order_product_name }}. Based on this product, suggest two small, relevant accessories that would improve their experience. Keep the tone helpful and concise."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        352,
+        96
+      ],
+      "id": "99cbd4dd-a3f6-4d97-b761-851fbf4646f1",
+      "name": "Basic LLM Chain1"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('loop try').item.json.order_product_name }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=You are a professional e-commerce customer support assistant.\n\nWrite a formal and empathetic out-of-stock email.\n\nCustomer name: {{ $json.customer_name }}\nProduct name: {{ $json.order_product_name }}\n\nRequirements:\n- Start with:\n  Subject: Update on Your Order – {{ $json.order_product_name }}\n\n- Then begin the email with:\n  Dear {{ $('Webhook').first().json.body.body.data.fields[0].value }},\n\n- Apologize sincerely that the product is currently out of stock.\n- Show empathy and understanding.\n- Mention that similar products are available.\n- Clearly say that they can reply to this email to swap their order.\n- Keep it professional and concise.\n- End with:\n\n  Best regards,  \n  E-Commerce Team.\n\nDo not use placeholders like [Customer Name].\nDo not add extra explanations.\nOnly return the email content.\n"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        272,
+        784
+      ],
+      "id": "d1c48fc3-83cd-455e-9a98-6adfaf1a3d80",
+      "name": "Basic LLM Chain2"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-4o-mini",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -1056,
+        608
+      ],
+      "id": "a378b2d0-917c-42a8-997d-0c78b8e99263",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "c0Het3rkd24gtNR4",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -864,
+        768
+      ],
+      "id": "d7c00772-b0cc-4c5e-b64c-88408dda3956",
+      "name": "OpenRouter Chat Model1",
+      "credentials": {
+        "openRouterApi": {
+          "id": "c0Het3rkd24gtNR4",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-4o-mini",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        208,
+        960
+      ],
+      "id": "cb776ba4-ce40-41f8-b2d5-c20e2b6836d5",
+      "name": "OpenRouter Chat Model2",
+      "credentials": {
+        "openRouterApi": {
+          "id": "c0Het3rkd24gtNR4",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-4o-mini",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        432,
+        304
+      ],
+      "id": "55e2e83b-3b8a-4dfe-9116-6e02ee271fc5",
+      "name": "OpenRouter Chat Model3",
+      "credentials": {
+        "openRouterApi": {
+          "id": "c0Het3rkd24gtNR4",
+          "name": "OpenRouter account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "loop try",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Precode Javascript": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "true set": {
+      "main": [
+        [
+          {
+            "node": "Send a message2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "false set": {
+      "main": [
+        [
+          {
+            "node": "Send a message3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "loop try": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Precode Javascript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain1": {
+      "main": [
+        [
+          {
+            "node": "true set",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain2": {
+      "main": [
+        [
+          {
+            "node": "false set",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Structured Output Parser",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain2",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {
+    "Webhook": [
+      {
+        "headers": {
+          "host": "techy.app.n8n.cloud",
+          "user-agent": "Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.70.3)",
+          "content-length": "366",
+          "accept": "*/*",
+          "accept-encoding": "gzip, br",
+          "accept-language": "*",
+          "cdn-loop": "cloudflare; loops=1; subreqs=1",
+          "cf-connecting-ip": "2406:da1a:c77:d40b:3338:2c9d:eeae:4297",
+          "cf-ew-via": "15",
+          "cf-ipcountry": "IN",
+          "cf-ray": "9d262887024c2e46-BOM",
+          "cf-visitor": "{\"scheme\":\"https\"}",
+          "cf-worker": "n8n.cloud",
+          "content-type": "application/json",
+          "x-forwarded-for": "2406:da1a:c77:d40b:3338:2c9d:eeae:4297, 162.158.227.205",
+          "x-forwarded-host": "techy.app.n8n.cloud",
+          "x-forwarded-port": "443",
+          "x-forwarded-proto": "https",
+          "x-forwarded-server": "traefik-prod-users-gwc-117-54c9d54758-729ln",
+          "x-is-trusted": "yes",
+          "x-real-ip": "2406:da1a:c77:d40b:3338:2c9d:eeae:4297"
+        },
+        "params": {},
+        "query": {},
+        "body": {
+          "order_id": "SA-20260223-4760",
+          "product_id": "27dc0961-49a9-4377-b982-b84c2477ae2a",
+          "product_name": "Smart Air Pump for Tires",
+          "quantity": 10,
+          "unit_price": 85,
+          "total_price": 850,
+          "customer_name": "Techy Boyz",
+          "customer_email": "tula.kay.karaych1@gmail.com",
+          "shipping_address": "CSMT MUMBAI",
+          "special_instructions": "HBD ABHII",
+          "user_id": "b7e99754-79a6-4b92-84d3-88bfa4e997cc"
+        },
+        "webhookUrl": "https://techy.app.n8n.cloud/webhook/tally-sales-order",
+        "executionMode": "production"
+      }
+    ]
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "fe45cd4e02e617326550e992fbc2b3658d75c03bf0882aa0182f05f16c433877"
+  }
+}
+
+
+_*Invoice + Qoutation :*_
+
+{
+  "nodes": [
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1tDsJAkS1zccKbCahUo8F0hAnGCgJ6pTMDit979Ucsw4",
+          "mode": "list",
+          "cachedResultName": "Stocklist",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1tDsJAkS1zccKbCahUo8F0hAnGCgJ6pTMDit979Ucsw4/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1clVno7_Hc7PRqdTHND8PwEYHUUzFix7a_OXtYFeTm4E/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ProductName                                   ",
+              "lookupValue": "={{ $json.body.body.data.fields[3].options[0].text }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -768,
+        288
+      ],
+      "id": "a2d842d8-0d5f-4e6f-98c6-70eb33fc9258",
+      "name": "Get row(s) in sheet",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "RR9cDB7wNsNDx8Kl",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "96ddf5ab-7cdb-4ccb-a05d-1cd4e684e5da",
+              "name": "invoiceHTML",
+              "value": "=<div style=\"font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; border: 1px solid #ddd; padding: 25px; border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.05);\">\n    \n    <div style=\"text-align: center; margin-bottom: 20px;\">\n        <img src=\"https://drive.google.com/uc?export=view&id=1Xub1UZjnVx9niAeDTMJl9RuFarI2lZtJ\" alt=\"Unorthodox Logo\" style=\"width: 180px; height: auto;\">\n    </div>\n\n    <h2 style=\"color: #1a73e8; text-align: center; margin-bottom: 20px;\">INVOICE</h2>\n    \n    <div style=\"margin-bottom: 20px;\">\n        <p style=\"margin: 5px 0;\"><strong>Customer:</strong> {{ $('Webhook').item.json.body.customer_name }} </p>\n        <p style=\"margin: 5px 0; color: #666;\">Processed by Unorthodox AI Workflow</p>\n    </div>\n\n    <table style=\"width: 100%; border-collapse: collapse; margin-top: 10px;\">\n        <thead>\n            <tr style=\"background-color: #f1f3f4; border-bottom: 2px solid #ddd;\">\n                <th style=\"padding: 12px; text-align: left;\">Product Details</th>\n                <th style=\"padding: 12px; text-align: center;\">Qty</th>\n                <th style=\"padding: 12px; text-align: right;\">Unit Price</th>\n                <th style=\"padding: 12px; text-align: right;\">Total</th>\n            </tr>\n        </thead>\n        <tbody>\n            <tr>\n                <td style=\"padding: 12px; border-bottom: 1px solid #eee;\"> {{ $('Webhook').item.json.body.product_name }}</td>\n                <td style=\"padding: 12px; border-bottom: 1px solid #eee; text-align: center;\">{{ $('Webhook').item.json.body.quantity }}</td>\n                <td style=\"padding: 12px; border-bottom: 1px solid #eee; text-align: right;\">₹{{ $('Webhook').item.json.body.unit_price }}</td>\n                <td style=\"padding: 12px; border-bottom: 1px solid #eee; text-align: right; font-weight: bold;\">\n                    ₹{{ $('Webhook').item.json.body.total_price }}\n                </td>\n            </tr>\n        </tbody>\n    </table>\n\n    <div style=\"text-align: right; margin-top: 20px;\">\n        <h3 style=\"color: #d93025; font-size: 20px;\">Total Due: ₹{{ $('Webhook').item.json.body.total_price }}</h3>\n    </div>\n\n    <hr style=\"border: 0; border-top: 1px solid #eee; margin: 30px 0 15px 0;\">\n    <p style=\"text-align: center; font-size: 13px; color: #888;\">\n        This is an automated invoice generated via n8n & Tally. Thank you!\n    </p>\n</div>",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -80,
+        160
+      ],
+      "id": "afe40a56-81ed-431d-8ad8-83e463a8cff8",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Webhook').item.json.body.customer_email }}",
+        "subject": "Invoice for your order",
+        "message": "={{ $json.invoiceHTML }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        80,
+        160
+      ],
+      "id": "25dcfce0-5570-4a11-a4d6-7e30319fff02",
+      "name": "Send a message",
+      "webhookId": "98c1693f-ffb1-41f7-8398-826bce6dbb7c",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "qArxkDXBnuNhnUXb",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "812bbca4-2f96-408e-9b8c-d6930fce2b3d",
+              "leftValue": "={{ $('Webhook').item.json.body.body.data.fields[3].options[0].text }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -608,
+        288
+      ],
+      "id": "1e224d62-4876-44c5-a742-66200b8978fe",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "generate-invoice",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1248,
+        304
+      ],
+      "id": "06e3e8df-35d3-4d1d-a395-2e3718d684bc",
+      "name": "Webhook",
+      "webhookId": "7ce5fe37-6113-446d-8908-bd446bdc7fb6"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "6ad052e6-c47d-4998-b4f9-c3028c999dbb",
+              "leftValue": "={{ $json['ProductName                                   '] }}",
+              "rightValue": "=",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -624,
+        656
+      ],
+      "id": "acf15a62-51cc-486f-ae25-69970fbf67f2",
+      "name": "If2"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1tDsJAkS1zccKbCahUo8F0hAnGCgJ6pTMDit979Ucsw4",
+          "mode": "list",
+          "cachedResultName": "Stocklist",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1tDsJAkS1zccKbCahUo8F0hAnGCgJ6pTMDit979Ucsw4/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1tDsJAkS1zccKbCahUo8F0hAnGCgJ6pTMDit979Ucsw4/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ProductName                                   ",
+              "lookupValue": "={{ $('Webhook').item.json.body.product_name }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -800,
+        544
+      ],
+      "id": "e9276b8b-c85a-4bec-9443-de3c78aa8b01",
+      "name": "Google Sheets1",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "RR9cDB7wNsNDx8Kl",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Webhook').item.json.body.customer_email }}",
+        "subject": "=Quotation for: {{ $('Webhook').item.json.body.product_name }}",
+        "message": "={{ $json.html }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        -224,
+        560
+      ],
+      "id": "bfe39051-7e1e-467e-9061-3db86a2b5e2e",
+      "name": "Send a message4",
+      "webhookId": "60603d52-2df0-4a58-a7d9-b80c5c9b9167",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "qArxkDXBnuNhnUXb",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Webhook').item.json.body.customer_email }}",
+        "subject": "=Regarding your inquiry: {{ $('Webhook').item.json.body.product_name }}",
+        "message": "=Hi {{ $('Webhook').item.json.body.customer_name }},  Thank you for reaching out! We received your request for a quote on '{{ $('Webhook').item.json.body.product_name }}'.  Unfortunately, we couldn't find an exact match for this item in our current catalog. Could you please double-check the product name or provide a model number?  Alternatively, reply to this email and one of our team members will assist you manually.",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        -224,
+        768
+      ],
+      "id": "c734c761-2f3d-4587-9c67-cb26d57615c7",
+      "name": "Send a message5",
+      "webhookId": "5b9b6b02-e835-4be1-87d5-126fea7e39b5",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "qArxkDXBnuNhnUXb",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5bb39336-37f1-4a11-bb8e-7f743477ba35",
+              "name": "html",
+              "value": "=<div style=\"font-family: Arial, sans-serif; border: 1px solid #ddd; padding: 20px; max-width: 600px; margin: auto; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.05);\">\n  \n  <div style=\"text-align: center; margin-bottom: 20px;\">\n    <img src=\"https://sl.bing.net/gp2j5xFykx2\" alt=\"Unorthodox Logo\" style=\"width: 180px; height: auto;\">\n  </div>\n\n  <h2 style=\"color: #2c3e50; text-align: center; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-top: 0;\">Official Quotation</h2>\n  \n  <p>Hi {{ $('Webhook').item.json.body.customer_name }}<strong> </strong>,</p>\n  <p>Thank you for your inquiry. Here are the details for your requested items:</p>\n  \n  <table style=\"width: 100%; border-collapse: collapse; margin-top: 15px;\">\n    <tr style=\"background-color: #f8f9fa;\">\n      <th style=\"text-align: left; padding: 8px; border-bottom: 1px solid #ddd;\">Product</th>\n      <th style=\"text-align: right; padding: 8px; border-bottom: 1px solid #ddd;\">Qty</th>\n      <th style=\"text-align: right; padding: 8px; border-bottom: 1px solid #ddd;\">Unit Price</th>\n    </tr>\n    <tr>\n      <td style=\"padding: 8px; border-bottom: 1px solid #ddd;\">{{ $('Google Sheets1').item.json['ProductName                                   '] }}</td>\n      <td style=\"padding: 8px; text-align: right; border-bottom: 1px solid #ddd;\"> {{ $('Webhook').item.json.body.quantity }} </td>\n      <td style=\"padding: 8px; text-align: right; border-bottom: 1px solid #ddd;\">₹{{ $node[\"Google Sheets1\"].json[\"Price\"] }}</td>\n    </tr>\n    <tr>\n      <td colspan=\"2\" style=\"padding: 8px; text-align: right;\"><strong>Estimated Total:</strong></td>\n      <td style=\"padding: 8px; text-align: right; color: #1a73e8; font-size: 1.1em;\"><strong>₹{{ $('Webhook').item.json.body.total_price }}</strong></td>\n    </tr>\n  </table>\n  \n  <div style=\"background-color: #fff9db; padding: 10px; border-radius: 8px; margin-top: 20px; border: 1px solid #f59f00;\">\n    <p style=\"margin: 0; font-size: 0.9em; color: #856404; text-align: center;\">\n      <strong>Note:</strong> Currently {{ $node[\"Google Sheets1\"].json[\"QuantityInStock\"] }} units available in stock.\n    </p>\n  </div>\n  \n  <p style=\"margin-top: 20px; font-size: 0.85em; color: #7f8c8d; text-align: center;\">\n    <em>This is an automated quotation generated by the Unorthodox AI Workflow. Valid for 7 days.</em>\n  </p>\n</div>",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -432,
+        560
+      ],
+      "id": "f900e8ae-a231-48dd-b405-496ea4046856",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "827dbe65-3242-465c-a4c2-9759fb0b93d1",
+              "leftValue": "=buy",
+              "rightValue": "={{ $json.body.body.data.fields[2].value }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -944,
+        304
+      ],
+      "id": "22e576ca-0a8d-4398-9401-5ae7c8c7c71e",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "07ae4b99-19ea-47c5-843d-eefc5b441381",
+              "leftValue": "={{ $('Webhook').item.json.body.body.data.fields[4].value }}",
+              "rightValue": "={{ $('Get row(s) in sheet').item.json.QuantityInStock }}",
+              "operator": {
+                "type": "number",
+                "operation": "lte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -368,
+        176
+      ],
+      "id": "72eede34-6e7f-4294-8350-a47948f8d665",
+      "name": "If3"
+    }
+  ],
+  "connections": {
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "If3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If2": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a message5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets1": {
+      "main": [
+        [
+          {
+            "node": "If2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Send a message4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Google Sheets1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If3": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {
+    "Webhook": [
+      {
+        "headers": {
+          "host": "techy.app.n8n.cloud",
+          "user-agent": "Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.70.3)",
+          "content-length": "357",
+          "accept": "*/*",
+          "accept-encoding": "gzip, br",
+          "accept-language": "*",
+          "cdn-loop": "cloudflare; loops=1; subreqs=1",
+          "cf-connecting-ip": "2406:da1a:c77:d407:6ea0:c920:62bf:7957",
+          "cf-ew-via": "15",
+          "cf-ipcountry": "IN",
+          "cf-ray": "9d26224032bf95ae-BOM",
+          "cf-visitor": "{\"scheme\":\"https\"}",
+          "cf-worker": "n8n.cloud",
+          "content-type": "application/json",
+          "x-forwarded-for": "2406:da1a:c77:d407:6ea0:c920:62bf:7957, 172.71.198.72",
+          "x-forwarded-host": "techy.app.n8n.cloud",
+          "x-forwarded-port": "443",
+          "x-forwarded-proto": "https",
+          "x-forwarded-server": "traefik-prod-users-gwc-117-54c9d54758-l75bb",
+          "x-is-trusted": "yes",
+          "x-real-ip": "2406:da1a:c77:d407:6ea0:c920:62bf:7957"
+        },
+        "params": {},
+        "query": {},
+        "body": {
+          "order_id": "SA-20260223-1596",
+          "product_id": "d3cd145c-48cf-40ca-8c64-75fec826a54f",
+          "product_name": "Induction Cooktop",
+          "quantity": 3,
+          "unit_price": 750,
+          "total_price": 2250,
+          "customer_name": "Techy Boyz",
+          "customer_email": "tula.kay.karaych1@gmail.com",
+          "shipping_address": "MCOE PUNE",
+          "special_instructions": "HBD AMIT",
+          "user_id": "b7e99754-79a6-4b92-84d3-88bfa4e997cc"
+        },
+        "webhookUrl": "https://techy.app.n8n.cloud/webhook/generate-invoice",
+        "executionMode": "production"
+      }
+    ]
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "fe45cd4e02e617326550e992fbc2b3658d75c03bf0882aa0182f05f16c433877"
+  }
+}
+
+
+_*Complaints:*_
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "sales-complaint",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1488,
+        336
+      ],
+      "id": "54a4657f-a219-465c-904a-4e8e493d13c2",
+      "name": "Webhook",
+      "webhookId": "23fd09c7-aca2-4e8e-8a84-b19cc69aa5d6"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Analyze this customer input and extract the key information:{{ $json.body.body.data.fields[2].value }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=You are a strict rule-based sentiment classifier used in an automation system.\n\nYou must follow classification rules EXACTLY as written.\nDo NOT soften tone.\nDo NOT reinterpret emotional intensity.\nDo NOT be polite in classification.\n\nSENTIMENT RULE ENGINE:\n\nIf the message contains ANY of the following:\n- ALL CAPS words longer than 2 letters\n- Words like: angry, worst, terrible, horrible, bad, useless\n- Urgent demands like: replace, refund, immediately, as soon as possible\n- Aggressive tone or dissatisfaction in strong wording\n- Repeated punctuation or emotional intensity\n\nThen sentiment MUST be: \"Angry\"\n\nIf message contains complaint but not aggressive tone:\n→ \"Frustrated\"\n\nIf message is factual and calm:\n→ \"Neutral\"\n\nIf message expresses appreciation:\n→ \"Positive\"\n\nIMPORTANT:\nIf there is ANY strong negative expression, you MUST choose \"Angry\".\nNever downgrade strong emotion to Neutral.\n\nRespond ONLY with raw JSON.\nNo markdown.\nNo explanations.\n\nSchema:\n\n{\n  \"category\": \"Technical | Billing | Shipping | General\",\n  \"sentiment\": \"Positive | Neutral | Frustrated | Angry\",\n  \"suggestedAction\": \"One short internal instruction\",\n  \"draftResponse\": \"Polite empathetic response\"\n}"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        -1232,
+        336
+      ],
+      "id": "337ddd74-4167-488c-a87f-1e4b83a4d783",
+      "name": "Classify Complaint with LLM"
+    },
+    {
+      "parameters": {
+        "jsCode": "const currentTimeISO = new Date().toISOString();\n\ntry {\n  const rawText = $input.first().json.text || $input.first().json.output || '{}';\n  let aiData = {};\n  try { aiData = JSON.parse(rawText); } catch (e) { aiData = {}; }\n\n  const originalData = $('Webhook').first().json;\n  const complaintTextRaw = originalData.body.body.data.fields[2].value;\n  const complaintText = complaintTextRaw.toLowerCase();\n\n  // ✅ Word-boundary safe matching — avoids \"urgent\" hitting \"urgently\"\n  function matchesAny(text, keywords) {\n    return keywords.some(word => {\n      // Escape special regex characters in keyword\n      const escaped = word.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&');\n      const regex = new RegExp(`\\\\b${escaped}\\\\b`, 'i');\n      return regex.test(text);\n    });\n  }\n\n  // ✅ Genuinely aggressive/escalatory angry keywords only\n  const angryKeywords = [\n    'furious', 'outraged', 'livid', 'pissed',\n    'worst', 'terrible', 'horrible', 'awful', 'pathetic', 'useless',\n    'disgusting', 'unacceptable', 'shameful', 'absurd', 'incompetent',\n    'scam', 'fraud', 'fake', 'cheated', 'lied', 'dishonest', 'misleading',\n    'trash', 'garbage', 'nonsense',\n    'legal action', 'lawyer', 'sue', 'consumer court',\n    'police complaint', 'court notice', 'legal notice', 'cyber crime',\n    'file a complaint', 'report you', 'ombudsman',\n    'bad review', '1 star', 'one star', 'negative review',\n    'expose this', 'viral', 'tell everyone', 'share everywhere',\n    'post publicly', 'social media',\n    'never again', 'never buying again', 'lost trust',\n    'full refund', 'refund immediately', 'money back', 'return my money',\n    'cancel immediately', 'take it back',\n    'how dare you', 'this is ridiculous', 'this is unacceptable',\n    'highly disappointed', 'extremely disappointed', 'extremely unhappy',\n    'fed up', 'sick of this', 'had enough', 'done with this',\n    'wasting my time', 'waste of money',\n    'manager immediately', 'escalate this', 'higher authority',\n    'fix this asap', 'take action immediately', 'instant refund'\n  ];\n\n  // ✅ Frustrated = complaint tone, not rage\n  const frustratedKeywords = [\n    'frustrated', 'disappointed', 'annoyed', 'irritated', 'upset',\n    'issue', 'problem', 'delay', 'delayed', 'slow', 'not happy',\n    'concern', 'confused', 'unclear', 'waiting', 'still waiting',\n    'no response', 'no reply', 'no update', 'not resolved',\n    'still not resolved', 'follow up', 'please check',\n    'need update', 'not working', 'does not work', 'stopped working',\n    'damaged', 'broken', 'defective', 'faulty',\n    'wrong product', 'missing item', 'poor packaging',\n    'late delivery', 'not delivered', 'bad service',\n    'urgent', 'urgently', 'as soon as possible', 'immediately',\n    'please help', 'need help', 'replace', 'replacement', 'refund'\n  ];\n\n  // ✅ ALL CAPS detection (exclude short all-caps like \"OK\", \"TV\")\n  const isAllCaps =\n    complaintTextRaw.replace(/\\s/g, '').length > 15 &&\n    complaintTextRaw === complaintTextRaw.toUpperCase();\n\n  // ✅ Repeated punctuation as anger signal\n  const hasRepeatedPunctuation = /[!?]{2,}/.test(complaintTextRaw);\n\n  let sentiment = 'Neutral';\n\n  if (isAllCaps || hasRepeatedPunctuation || matchesAny(complaintText, angryKeywords)) {\n    sentiment = 'Angry';\n  } else if (matchesAny(complaintText, frustratedKeywords)) {\n    sentiment = 'Frustrated';\n  }\n\n  return {\n    json: {\n      timestamp_utc: currentTimeISO,\n      Name: originalData.body.body.data.fields[0].value,\n      Contact: originalData.body.body.data.fields[1].value,\n      Description: complaintTextRaw,\n      Category: aiData.category || 'General',\n      Sentiment: sentiment,\n      SuggestedAction: aiData.suggestedAction || 'Review manually',\n      DraftResponse: aiData.draftResponse || 'We will get back to you shortly.'\n    }\n  };\n\n} catch (error) {\n  const originalData = $('Webhook').first().json;\n  return {\n    json: {\n      timestamp_utc: new Date().toISOString(),\n    Name: (originalData.body && originalData.body.body && originalData.body.body.data && originalData.body.body.data.fields && originalData.body?.body?.data?.fields?.[0]?.value) || 'Unknown',\n\n      Contact: (originalData.body?.body?.data?.fields?.[1]?.value) || '',\n  Description: (originalData.body?.body?.data?.fields?.[2]?.value) || '',\n      Sentiment: 'Neutral',\n      SuggestedAction: 'Review manually — processing error',\n      DraftResponse: 'We have received your complaint and will respond shortly.',\n      Error: error.message\n    }\n  };\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -880,
+        336
+      ],
+      "id": "005eb13d-7538-4ade-8a0a-57803d509953",
+      "name": "Process and Override Sentiment"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1wulC9Yzxjg7eOZh7LpYqb5mSzR00qOaH_R1Mj90MZbw",
+          "mode": "list",
+          "cachedResultName": "complaints",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1wulC9Yzxjg7eOZh7LpYqb5mSzR00qOaH_R1Mj90MZbw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1779129504,
+          "mode": "list",
+          "cachedResultName": "complaints - Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1wulC9Yzxjg7eOZh7LpYqb5mSzR00qOaH_R1Mj90MZbw/edit#gid=1779129504"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Name": "={{ $json.Name }}",
+            "Contact": "={{ $json.Contact }}",
+            "Description": "={{ $json.Description }}",
+            "AI:Category": "={{ $json.Category }}",
+            "AI:sentiment": "={{ $json.Sentiment }}",
+            "AI:Suggested Action": "={{ $json.SuggestedAction }}",
+            "AI:Draft Response": "={{ $json.DraftResponse }}",
+            "Status": "(to be approved)"
+          },
+          "matchingColumns": [
+            "Name"
+          ],
+          "schema": [
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Contact",
+              "displayName": "Contact",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Description",
+              "displayName": "Description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "AI:Category",
+              "displayName": "AI:Category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "AI:sentiment",
+              "displayName": "AI:sentiment",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "AI:Suggested Action",
+              "displayName": "AI:Suggested Action",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "AI:Draft Response",
+              "displayName": "AI:Draft Response",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -640,
+        336
+      ],
+      "id": "d30d403c-467a-4806-a471-892bdbcafb90",
+      "name": "Log to Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "RR9cDB7wNsNDx8Kl",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "3590fe78-477e-4ed2-b123-f604ddb961ef",
+              "leftValue": "={{ $json['AI:sentiment'] }}",
+              "rightValue": "Angry",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -432,
+        336
+      ],
+      "id": "d3e9bc0b-e414-44f3-bb48-adfae71aaf00",
+      "name": "Is Angry?"
+    },
+    {
+      "parameters": {
+        "sendTo": "support-team@yourcompany.com",
+        "subject": "=🔥 URGENT: High-Priority Complaint from {{ $('Webhook').item.json.body.body.body.data.fields[0].value }}",
+        "message": "=<div style=\"font-family: Arial, sans-serif; border: 2px solid #ff4d4d; border-radius: 8px; overflow: hidden; max-width: 640px;\">\n  <div style=\"background-color: #ff4d4d; color: white; padding: 15px; font-size: 20px; font-weight: bold;\">\n    🔥 High-Priority Support Alert\n  </div>\n  <div style=\"padding: 20px; color: #333; line-height: 1.8;\">\n    <p><strong>Customer Name:</strong> {{ $('Webhook').item.json.body.body.body.data.fields[0].value }}</p>\n    <p><strong>Customer Contact:</strong>{{ $('Webhook').item.json.body.body.body.data.fields[1].value }} </p>\n    <p><strong>Sentiment:</strong> <span style=\"color: #ff4d4d; font-weight: bold;\">{{ $('Log to Google Sheets').item.json['AI:sentiment'] }}</span></p>\n    <p><strong>Issue Category:</strong> {{ $('Log to Google Sheets').item.json['AI:Category'] }}</p>\n    <hr style=\"border: 0; border-top: 1px solid #eee;\">\n    <p><strong>Description:</strong><br><em>\"{{ $('Log to Google Sheets').item.json.Description }}\"</em></p>\n    <p><strong>AI Suggested Action:</strong><br>\n      <span style=\"background-color: #fff3f3; padding: 10px; border-left: 4px solid #ff4d4d; display: block;\">\n        {{ $('Log to Google Sheets').item.json['AI:Suggested Action'] }}\n      </span>\n    </p>\n    <p><strong>AI Draft Response to Customer:</strong><br>\n      <span style=\"background-color: #f0fff0; padding: 10px; border-left: 4px solid #4CAF50; display: block;\">\n        {{ $('Log to Google Sheets').item.json['AI:Draft Response'] }}\n      </span>\n    </p>\n    <a href=\"https://docs.google.com/spreadsheets/d/1wulC9Yzxjg7eOZh7LpYqb5mSzR00qOaH_R1Mj90MZbw\"\n       style=\"display: inline-block; background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-top: 20px;\">\n      View Full Log in Google Sheets\n    </a>\n  </div>\n</div>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        -144,
+        208
+      ],
+      "id": "38d28b79-ba83-4bcd-bf31-63ae6bfe4be3",
+      "name": "Send Urgent Alert Email",
+      "webhookId": "db11fef4-fed8-4cc6-b990-477368beafae",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "qArxkDXBnuNhnUXb",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, message: 'Complaint received and escalated. Our team will contact you shortly.', sentiment: $('Log to Google Sheets').item.json['AI:sentiment'] }) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        112,
+        208
+      ],
+      "id": "e87f413a-e5ea-4b05-88ed-cbfd2abbe9fd",
+      "name": "Respond — Angry (Escalated)"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, message: 'Thank you for reaching out. We have received your complaint and will get back to you soon.', sentiment: $('Log to Google Sheets').item.json['AI:sentiment'] }) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -128,
+        416
+      ],
+      "id": "8f0d8d06-50da-45d6-9e78-c6596a9f6845",
+      "name": "Respond — Standard"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-4o-mini",
+        "options": {
+          "maxTokens": 500
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -1200,
+        576
+      ],
+      "id": "d8ebd578-633f-4727-99a5-696278b676d1",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "c0Het3rkd24gtNR4",
+          "name": "OpenRouter account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Classify Complaint with LLM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify Complaint with LLM": {
+      "main": [
+        [
+          {
+            "node": "Process and Override Sentiment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process and Override Sentiment": {
+      "main": [
+        [
+          {
+            "node": "Log to Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log to Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Is Angry?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Angry?": {
+      "main": [
+        [
+          {
+            "node": "Send Urgent Alert Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond — Standard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Urgent Alert Email": {
+      "main": [
+        [
+          {
+            "node": "Respond — Angry (Escalated)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Classify Complaint with LLM",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {
+    "Webhook": [
+      {
+        "headers": {
+          "host": "ayush24.app.n8n.cloud",
+          "user-agent": "Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.70.5)",
+          "content-length": "137",
+          "accept": "*/*",
+          "accept-encoding": "gzip, br",
+          "accept-language": "*",
+          "cdn-loop": "cloudflare; loops=1; subreqs=1",
+          "cf-connecting-ip": "2406:da1a:c77:d400:42a6:1bd6:877f:870",
+          "cf-ew-via": "15",
+          "cf-ipcountry": "IN",
+          "cf-ray": "9d4dad7f2d2d6ef4-BOM",
+          "cf-visitor": "{\"scheme\":\"https\"}",
+          "cf-worker": "n8n.cloud",
+          "content-type": "application/json",
+          "x-forwarded-for": "2406:da1a:c77:d400:42a6:1bd6:877f:870, 162.158.227.214",
+          "x-forwarded-host": "ayush24.app.n8n.cloud",
+          "x-forwarded-port": "443",
+          "x-forwarded-proto": "https",
+          "x-forwarded-server": "traefik-prod-users-gwc-69-5b9dd78d9-xjftg",
+          "x-is-trusted": "yes",
+          "x-real-ip": "2406:da1a:c77:d400:42a6:1bd6:877f:870"
+        },
+        "params": {},
+        "query": {},
+        "body": {
+          "body": {
+            "body": {
+              "data": {
+                "fields": [
+                  {
+                    "value": "PodeAppa"
+                  },
+                  {
+                    "value": "apsingekarpadmaksh@gmail.com"
+                  },
+                  {
+                    "value": "to less battery back up"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "webhookUrl": "https://ayush24.app.n8n.cloud/webhook/sales-complaint",
+        "executionMode": "production"
+      }
+    ]
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "fe45cd4e02e617326550e992fbc2b3658d75c03bf0882aa0182f05f16c433877"
+  }
+}
+
+
+_*Review:*_
+{
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Webhook').item.json.body.body.body.review }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are a sentiment analyst. You will receive an email. Analyze the tone and reply with ONLY one word: 'Positive', 'Negative', or 'Neutral'. Do not add any punctuation or extra text.\" "
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        -720,
+        144
+      ],
+      "id": "ec33a72a-127d-4cdd-a142-80cdf593389d",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Basic LLM Chain').item.json.text }}",
+                    "rightValue": "Positive",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "511e5a91-24e5-464b-a216-32123a4f3ac3"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "fafc5ee9-118c-452c-8983-0e22bc9317e4",
+                    "leftValue": "={{ $('Basic LLM Chain').item.json.text }}",
+                    "rightValue": "Negative",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "45f8ee5b-3539-4d3a-8de0-8a7da5668fa4",
+                    "leftValue": "={{ $('Basic LLM Chain').item.json.text }}",
+                    "rightValue": "Neutral",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -240,
+        160
+      ],
+      "id": "8d98ee1b-f181-48e5-bce3-280cd4c41bad",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Webhook').item.json.body.body.body.email }}",
+        "subject": "Regarding Your Review ",
+        "emailType": "text",
+        "message": "=Hello {{ $('Webhook').item.json.body.body.body.name }},\n\nThank you for reaching out to us. We sincerely apologize that your recent experience did not meet your expectations.\n\nPlease be assured that your feedback has been logged in our system, and a member of our team will personally review the matter to ensure appropriate action is taken.\n\nWe truly value your feedback and appreciate the opportunity to improve.\n\nKind regards,\nECommerce Team.\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        48,
+        192
+      ],
+      "id": "f18c2f00-18b5-46c7-8fa8-3740f245d3ef",
+      "name": "Send a message",
+      "webhookId": "f17a0d32-2bdc-4e88-a96c-76d5639440e4",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "qArxkDXBnuNhnUXb",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Webhook').item.json.body.body.body.email }}",
+        "subject": "Regarding Positive Review",
+        "emailType": "text",
+        "message": "=Hi {{ $('Webhook').item.json.body.body.body.name }},\n\nThank you very much for your kind words. We are delighted to hear that you had a great experience with us.\n\nYour feedback has been successfully recorded in our system. We truly appreciate your support and look forward to serving you again.\n\nWishing you good health and happy shopping ahead!\n\nWarm regards,\nECommerce Team.\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "a2b2fc81-3e00-4ea5-af18-56130fe8b0c7",
+      "name": "Send a message1",
+      "webhookId": "dee388d0-c3a8-46d1-97a1-e2cafa04e632",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "qArxkDXBnuNhnUXb",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Webhook').item.json.body.body.body.email }}",
+        "subject": "Regarding your review",
+        "emailType": "text",
+        "message": "=Hi {{ $('Webhook').item.json.body.body.body.name }},\n\nThank you for taking the time to share your feedback with us.\n\nWe have successfully received your review and added it to our records. Your insights help us continuously improve our services.\n\nIf you have any additional suggestions or concerns, please feel free to reach out at any time.\n\nBest regards,\nECommerce Team.\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        -16,
+        384
+      ],
+      "id": "45b75289-f6c3-4675-a6b9-6bea403c5d32",
+      "name": "Send a message2",
+      "webhookId": "92a609a6-1acc-42b4-92ce-e8b47398d80c",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "qArxkDXBnuNhnUXb",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst result = items.map((item) => {\n  return {\n    name: item?.json?.From,\n    date: item?.json?.internalDate,\n  };\n});\nreturn result;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -928,
+        192
+      ],
+      "id": "9fb75cac-bd2f-40da-bf27-2699c4bd0bcc",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1n5YOyFO_jZTxUgXKJFoFaCjxZ_h4TaAhOpTMUY6QBZc",
+          "mode": "list",
+          "cachedResultName": "Feedback",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1n5YOyFO_jZTxUgXKJFoFaCjxZ_h4TaAhOpTMUY6QBZc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1n5YOyFO_jZTxUgXKJFoFaCjxZ_h4TaAhOpTMUY6QBZc/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Customer Name": "={{ $('Webhook').item.json.body.body.name }}",
+            "Review": "={{ $json.text }}",
+            "Cust Email": "={{ $('Webhook').item.json.body.body.email }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Customer Name",
+              "displayName": "Customer Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Review",
+              "displayName": "Review",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Cust Email",
+              "displayName": "Cust Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -448,
+        256
+      ],
+      "id": "69d4c005-5137-4693-900b-1f61195330c9",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "RR9cDB7wNsNDx8Kl",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "submit-your-review",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1136,
+        112
+      ],
+      "id": "dae86dbb-0a8a-4bd7-a197-4747b9b93765",
+      "name": "Webhook",
+      "webhookId": "7a021c38-d6b1-417d-96d9-ff5ad7d1209a"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-4o-mini",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -800,
+        352
+      ],
+      "id": "fd214d92-058a-4536-afac-0a96813b0ce7",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "c0Het3rkd24gtNR4",
+          "name": "OpenRouter account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Send a message1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a message2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {
+    "Webhook": [
+      {
+        "headers": {
+          "host": "ayush24.app.n8n.cloud",
+          "user-agent": "Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.70.5)",
+          "content-length": "102",
+          "accept": "*/*",
+          "accept-encoding": "gzip, br",
+          "accept-language": "*",
+          "cdn-loop": "cloudflare; loops=1; subreqs=1",
+          "cf-connecting-ip": "2406:da1a:c77:d405:6ea7:4c62:76de:2a14",
+          "cf-ew-via": "15",
+          "cf-ipcountry": "IN",
+          "cf-ray": "9d4da5ffddc647b9-BOM",
+          "cf-visitor": "{\"scheme\":\"https\"}",
+          "cf-worker": "n8n.cloud",
+          "content-type": "application/json",
+          "x-forwarded-for": "2406:da1a:c77:d405:6ea7:4c62:76de:2a14, 172.69.86.254",
+          "x-forwarded-host": "ayush24.app.n8n.cloud",
+          "x-forwarded-port": "443",
+          "x-forwarded-proto": "https",
+          "x-forwarded-server": "traefik-prod-users-gwc-69-5b9dd78d9-xjftg",
+          "x-is-trusted": "yes",
+          "x-real-ip": "2406:da1a:c77:d405:6ea7:4c62:76de:2a14"
+        },
+        "params": {},
+        "query": {},
+        "body": {
+          "body": {
+            "body": {
+              "name": "PodeAppa",
+              "email": "apsingekarpadmaksh@gmail.com",
+              "review": "DECENT QUALITY"
+            }
+          }
+        },
+        "webhookUrl": "https://ayush24.app.n8n.cloud/webhook/submit-your-review",
+        "executionMode": "production"
+      }
+    ]
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "fe45cd4e02e617326550e992fbc2b3658d75c03bf0882aa0182f05f16c433877"
+  }
+}
+
+
+_*sales analysis:*_:
+{
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 23 * * *"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -416,
+        128
+      ],
+      "id": "9667cc18-aaef-4a40-a3cb-360c7dfa8680",
+      "name": "Daily at 11 PM"
+    },
+    {
+      "parameters": {
+        "jsCode": "// This forces the date to be calculated based on a specific timezone\nconst today = new Date().toLocaleString(\"en-IN\", {timeZone: \"Asia/Kolkata\"});\n\n// The string comes back as \"DD/MM/YYYY, HH:MM:SS\", so we split it\nconst datePart = today.split(',')[0]; \nconst [day, month, year] = datePart.split('/');\n\nreturn {\n  json: {\n    todayDate: `${day.padStart(2, '0')}-${month.padStart(2, '0')}-${year}`\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -224,
+        128
+      ],
+      "id": "579e7752-048c-4c18-9a98-c87aad352b1d",
+      "name": "Get Today's Date"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1mHPgQNoonGPPNIKffOKTiUVslSc0453BUlL03ChkeEU",
+          "mode": "list",
+          "cachedResultName": "analysis",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mHPgQNoonGPPNIKffOKTiUVslSc0453BUlL03ChkeEU/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mHPgQNoonGPPNIKffOKTiUVslSc0453BUlL03ChkeEU/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Date",
+              "lookupValue": "={{ $json.todayDate }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -16,
+        128
+      ],
+      "id": "f12c6778-1cba-4fd2-8343-307d8f68d9d2",
+      "name": "Fetch Today's Sales",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "RR9cDB7wNsNDx8Kl",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const salesData = $input.all();\n// Use .first() to ensure we get the date regardless of branch depth\nconst todayDate = $('Get Today\\'s Date').first().json.todayDate;\n\nif (salesData.length === 0 || (salesData.length === 1 && !salesData[0].json[\"Product Name\"])) {\n  return {\n    json: {\n      date: todayDate,\n      totalRevenue: 0,\n      totalOrders: 0,\n      salesList: \"No sales today\"\n    }\n  };\n}\n\nlet totalRevenue = 0;\nconst productList = [];\n\nfor (const sale of salesData) {\n  const price = parseFloat(sale.json[\"Total Price\"]) || 0;\n  const product = sale.json[\"Product Name\"] || \"Unknown\";\n  const qty = sale.json[\"Quantity\"] || \"0\";\n  \n  totalRevenue += price;\n  productList.push(`${product} (Qty: ${qty}, Price: ${price})`);\n}\n\nreturn {\n  json: {\n    date: todayDate,\n    totalRevenue: totalRevenue.toFixed(2),\n    totalOrders: salesData.length,\n    salesList: productList.join(\"; \")\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        176,
+        128
+      ],
+      "id": "967ff847-e6eb-4fea-8738-85c56135341f",
+      "name": "Calculate Sales Metrics"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a sales analyst. Summarize today's sales and provide insights.\n\nSales Data for {{ $json.date }}:\n- Total Revenue: ${{ $json.totalRevenue }}\n- Total Orders: {{ $json.totalOrders }}\n- Sales List: {{ $json.salesList }}\n\nProvide a brief analysis in JSON format (no markdown):\n{\n  \"summary\": \"2-3 sentence summary of today's performance\",\n  \"status\": \"Excellent\" or \"Good\" or \"Poor\" or \"Critical\",\n  \"recommendation\": \"One actionable recommendation\"\n}\n\nStatus Guide:\n- Excellent: Revenue >= $600\n- Good: Revenue >= $300\n- Poor: Revenue > $0 but < $300\n- Critical: Revenue = $0",
+        "hasOutputParser": true,
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        320,
+        -64
+      ],
+      "id": "9a260985-3372-4185-ab98-870ef2ed0aa5",
+      "name": "AI Sales Summary"
+    },
+    {
+      "parameters": {
+        "jsCode": "const metrics = $('Calculate Sales Metrics').first().json;\nconst aiOutput = $input.first().json;\n\n// Handle different AI response formats\nlet aiData = aiOutput;\nif (typeof aiOutput.text === 'string') {\n    try {\n        // Remove markdown formatting if present\n        const cleanJson = aiOutput.text.replace(/```json|```/g, '');\n        aiData = JSON.parse(cleanJson);\n    } catch (e) {\n        aiData = { summary: aiOutput.text, status: \"Unknown\", recommendation: \"Check logs\" };\n    }\n}\n\nreturn {\n  json: {\n    Date: metrics.date,\n    \"Total Revenue\": String(metrics.totalRevenue),\n    \"Total Orders\": String(metrics.totalOrders),\n    \"AI Summary\": aiData.summary || \"No summary available\",\n    \"Status\": aiData.status || \"Unknown\",\n    recommendation: aiData.recommendation || \"Continue monitoring\",\n    isUrgent: (aiData.status === \"Poor\" || aiData.status === \"Critical\")\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        576,
+        128
+      ],
+      "id": "2ad3d49c-76a3-48bd-ad05-9b4a520983ce",
+      "name": "Prepare Report"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "13rM7VgxMd0FRS007XGzMo0Al3DpVq9iio_2Gmumr15A",
+          "mode": "list",
+          "cachedResultName": "report",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/13rM7VgxMd0FRS007XGzMo0Al3DpVq9iio_2Gmumr15A/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/13rM7VgxMd0FRS007XGzMo0Al3DpVq9iio_2Gmumr15A/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Date": "={{ $json.Date }}",
+            "Total Revenue": "={{ $json['Total Revenue'] }}",
+            "Total Orders": "={{ $json['Total Orders'] }}",
+            "AI Summary": "={{ $json['AI Summary'] }}",
+            "Status": "={{ $json.Status }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Total Revenue",
+              "displayName": "Total Revenue",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Total Orders",
+              "displayName": "Total Orders",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "AI Summary",
+              "displayName": "AI Summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        784,
+        128
+      ],
+      "id": "e71299eb-b1dc-42b0-b0e8-8c85ea0115a3",
+      "name": "Log to Report Sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "RR9cDB7wNsNDx8Kl",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "urgent-check",
+              "leftValue": "={{ $('Prepare Report').item.json.isUrgent }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        976,
+        128
+      ],
+      "id": "983e6b23-975f-454e-9480-4d560ba5a518",
+      "name": "Is Urgent?"
+    },
+    {
+      "parameters": {
+        "sendTo": "boyztechy2@gmail.com",
+        "subject": "=🚨 URGENT: {{ $json.Status }} Sales - {{ $json.Date }}",
+        "message": "=<div style=\"font-family: Arial, sans-serif; max-width: 600px;\">\n  <div style=\"background: #dc2626; color: white; padding: 20px; text-align: center;\">\n    <h2 style=\"margin: 0;\">🚨 URGENT SALES ALERT</h2>\n    <p style=\"margin: 10px 0 0 0;\">{{ $json.Date }}</p>\n  </div>\n  \n  <div style=\"padding: 20px; background: #fef2f2;\">\n    <div style=\"background: white; border-left: 4px solid #dc2626; padding: 15px; margin-bottom: 15px;\">\n      <h3 style=\"margin: 0 0 10px 0; color: #dc2626;\">Performance Alert</h3>\n      <p style=\"margin: 5px 0;\"><strong>Revenue:</strong> ${{ $json['Total Revenue'] }}</p>\n      <p style=\"margin: 5px 0;\"><strong>Orders:</strong> {{ $json['Total Orders'] }}</p>\n      <p style=\"margin: 5px 0;\"><strong>Status:</strong> {{ $json.Status }}</p>\n    </div>\n    \n    <div style=\"background: white; padding: 15px; margin-bottom: 15px;\">\n      <h3 style=\"margin: 0 0 10px 0;\">AI Analysis</h3>\n      <p style=\"margin: 0; color: #374151;\">{{ $json['AI Summary'] }}</p>\n    </div>\n    \n    <div style=\"background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px;\">\n      <h3 style=\"margin: 0 0 10px 0; color: #92400e;\">⚡ Recommended Action</h3>\n      <p style=\"margin: 0; color: #78350f;\">{{ $json.recommendation }}</p>\n    </div>\n  </div>\n  \n  <div style=\"text-align: center; padding: 10px; color: #6b7280; font-size: 12px;\">\n    Automated Alert - Immediate Attention Required\n  </div>\n</div>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1184,
+        16
+      ],
+      "id": "5480cfd5-87bb-453b-b84e-edb38d21f04b",
+      "name": "Send Urgent Alert",
+      "webhookId": "9f6a8108-a59c-4e59-bddf-2cda663b241f",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "qArxkDXBnuNhnUXb",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "boyztechy2@gmail.com",
+        "subject": "=📊 Daily Sales Report - {{ $json.Date }} ({{ $json.Status }})",
+        "message": "=<div style=\"font-family: Arial, sans-serif; max-width: 600px;\">\n  <div style=\"background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center;\">\n    <h2 style=\"margin: 0;\">📊 Daily Sales Report</h2>\n    <p style=\"margin: 5px 0 0 0;\">{{ $json.Date }}</p>\n  </div>\n  \n  <div style=\"padding: 20px; background: #f9fafb;\">\n    <div style=\"background: white; border-radius: 8px; padding: 20px; margin-bottom: 15px;\">\n      <h3 style=\"margin: 0 0 15px 0; color: #1f2937;\">Performance Summary</h3>\n      <table style=\"width: 100%;\">\n        <tr>\n          <td style=\"padding: 8px 0; color: #6b7280;\">💰 Revenue:</td>\n          <td style=\"padding: 8px 0; font-weight: bold; text-align: right;\">${{ $json['Total Revenue'] }}</td>\n        </tr>\n        <tr>\n          <td style=\"padding: 8px 0; color: #6b7280;\">📦 Orders:</td>\n          <td style=\"padding: 8px 0; font-weight: bold; text-align: right;\">{{ $json['Total Orders'] }}</td>\n        </tr>\n        <tr>\n          <td style=\"padding: 8px 0; color: #6b7280;\">📊 Status:</td>\n          <td style=\"padding: 8px 0; font-weight: bold; text-align: right;\">{{ $json.Status }}</td>\n        </tr>\n      </table>\n    </div>\n    \n    <div style=\"background: white; border-radius: 8px; padding: 20px; margin-bottom: 15px;\">\n      <h3 style=\"margin: 0 0 10px 0; color: #1f2937;\">🤖 AI Insights</h3>\n      <p style=\"margin: 0 0 15px 0; color: #374151; line-height: 1.6;\">{{ $json['AI Summary'] }}</p>\n      <div style=\"background: #f0fdf4; border-left: 3px solid #10b981; padding: 10px;\">\n        <p style=\"margin: 0; color: #065f46;\"><strong>💡 Recommendation:</strong> {{ $json.recommendation }}</p>\n      </div>\n    </div>\n  </div>\n  \n  <div style=\"text-align: center; padding: 10px; color: #6b7280; font-size: 12px;\">\n    Automated by Sales AI Assistant\n  </div>\n</div>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1184,
+        224
+      ],
+      "id": "7d058c00-b0c9-48f3-8b3c-38eaaca0801c",
+      "name": "Send Normal Report",
+      "webhookId": "a1d204db-71da-48b2-b0bb-52c96f321d6f",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "qArxkDXBnuNhnUXb",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-4o-mini",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        320,
+        224
+      ],
+      "id": "32d50839-dd44-408a-b667-20a132b7a02a",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "c0Het3rkd24gtNR4",
+          "name": "OpenRouter account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Daily at 11 PM": {
+      "main": [
+        [
+          {
+            "node": "Get Today's Date",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Today's Date": {
+      "main": [
+        [
+          {
+            "node": "Fetch Today's Sales",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Today's Sales": {
+      "main": [
+        [
+          {
+            "node": "Calculate Sales Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Sales Metrics": {
+      "main": [
+        [
+          {
+            "node": "AI Sales Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Sales Summary": {
+      "main": [
+        [
+          {
+            "node": "Prepare Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Report": {
+      "main": [
+        [
+          {
+            "node": "Log to Report Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log to Report Sheet": {
+      "main": [
+        [
+          {
+            "node": "Is Urgent?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Urgent?": {
+      "main": [
+        [
+          {
+            "node": "Send Urgent Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Normal Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Sales Summary",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "fe45cd4e02e617326550e992fbc2b3658d75c03bf0882aa0182f05f16c433877"
+  }
+}
+
+
+_*Inventory Guard:*_
+{
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 21
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -736,
+        256
+      ],
+      "id": "79834b1d-c1c2-4cac-9662-1618947c98fe",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "301af0ae-9f0c-48b8-9bdc-445bb2917a78",
+              "leftValue": "={{ $json.QuantityInStock }}",
+              "rightValue": 10,
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -320,
+        256
+      ],
+      "id": "0d2d9659-8d15-4985-b750-1dbcd2a8c00a",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Product Name: {{ $json['ProductName                                   '] }}\\nCurrent Stock: {{ $json.QuantityInStock }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are an inventory manager. You will receive a list of low-stock products. Draft a professional email to our supplier requesting a restock of these items. Be polite and concise."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        -112,
+        160
+      ],
+      "id": "d71abc8a-9433-4e44-8627-65db3ca2b02d",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "sendTo": "amitrajebhosale0019@gmail.com",
+        "subject": "=Low Stock Alert: {{ $('If').item.json.ProductName }}",
+        "emailType": "text",
+        "message": "={{ $json.text }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        240,
+        160
+      ],
+      "id": "5cc5384a-a823-435b-b6e1-c26db0447959",
+      "name": "Send a message",
+      "webhookId": "881300b8-8abc-4d70-92b2-62505c9e8ef7",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "qArxkDXBnuNhnUXb",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1tDsJAkS1zccKbCahUo8F0hAnGCgJ6pTMDit979Ucsw4",
+          "mode": "list",
+          "cachedResultName": "Stocklist",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1tDsJAkS1zccKbCahUo8F0hAnGCgJ6pTMDit979Ucsw4/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1tDsJAkS1zccKbCahUo8F0hAnGCgJ6pTMDit979Ucsw4/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -528,
+        256
+      ],
+      "id": "6eb55700-d27b-4631-b198-ead0966e8ec5",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "RR9cDB7wNsNDx8Kl",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -16,
+        352
+      ],
+      "id": "40a50e4a-e595-4971-b756-28a337ad38f2",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "c0Het3rkd24gtNR4",
+          "name": "OpenRouter account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "fe45cd4e02e617326550e992fbc2b3658d75c03bf0882aa0182f05f16c433877"
+  }
+}
