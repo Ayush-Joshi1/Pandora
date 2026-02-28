@@ -1,0 +1,448 @@
+{
+  "name": "Review",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Webhook').item.json.body.body.body.review }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are a sentiment analyst. You will receive an email. Analyze the tone and reply with ONLY one word: 'Positive', 'Negative', or 'Neutral'. Do not add any punctuation or extra text.\" "
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        -720,
+        144
+      ],
+      "id": "ec33a72a-127d-4cdd-a142-80cdf593389d",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Basic LLM Chain').item.json.text }}",
+                    "rightValue": "Positive",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "511e5a91-24e5-464b-a216-32123a4f3ac3"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "fafc5ee9-118c-452c-8983-0e22bc9317e4",
+                    "leftValue": "={{ $('Basic LLM Chain').item.json.text }}",
+                    "rightValue": "Negative",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "45f8ee5b-3539-4d3a-8de0-8a7da5668fa4",
+                    "leftValue": "={{ $('Basic LLM Chain').item.json.text }}",
+                    "rightValue": "Neutral",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -240,
+        160
+      ],
+      "id": "8d98ee1b-f181-48e5-bce3-280cd4c41bad",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Webhook').item.json.body.body.body.email }}",
+        "subject": "Regarding Your Review ",
+        "emailType": "text",
+        "message": "=Hello {{ $('Webhook').item.json.body.body.body.name }},\n\nThank you for reaching out to us. We sincerely apologize that your recent experience did not meet your expectations.\n\nPlease be assured that your feedback has been logged in our system, and a member of our team will personally review the matter to ensure appropriate action is taken.\n\nWe truly value your feedback and appreciate the opportunity to improve.\n\nKind regards,\nECommerce Team.\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        48,
+        192
+      ],
+      "id": "f18c2f00-18b5-46c7-8fa8-3740f245d3ef",
+      "name": "Send a message",
+      "webhookId": "f17a0d32-2bdc-4e88-a96c-76d5639440e4",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "qArxkDXBnuNhnUXb",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Webhook').item.json.body.body.body.email }}",
+        "subject": "Regarding Positive Review",
+        "emailType": "text",
+        "message": "=Hi {{ $('Webhook').item.json.body.body.body.name }},\n\nThank you very much for your kind words. We are delighted to hear that you had a great experience with us.\n\nYour feedback has been successfully recorded in our system. We truly appreciate your support and look forward to serving you again.\n\nWishing you good health and happy shopping ahead!\n\nWarm regards,\nECommerce Team.\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "a2b2fc81-3e00-4ea5-af18-56130fe8b0c7",
+      "name": "Send a message1",
+      "webhookId": "dee388d0-c3a8-46d1-97a1-e2cafa04e632",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "qArxkDXBnuNhnUXb",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Webhook').item.json.body.body.body.email }}",
+        "subject": "Regarding your review",
+        "emailType": "text",
+        "message": "=Hi {{ $('Webhook').item.json.body.body.body.name }},\n\nThank you for taking the time to share your feedback with us.\n\nWe have successfully received your review and added it to our records. Your insights help us continuously improve our services.\n\nIf you have any additional suggestions or concerns, please feel free to reach out at any time.\n\nBest regards,\nECommerce Team.\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        -16,
+        384
+      ],
+      "id": "45b75289-f6c3-4675-a6b9-6bea403c5d32",
+      "name": "Send a message2",
+      "webhookId": "92a609a6-1acc-42b4-92ce-e8b47398d80c",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "qArxkDXBnuNhnUXb",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst result = items.map((item) => {\n  return {\n    name: item?.json?.From,\n    date: item?.json?.internalDate,\n  };\n});\nreturn result;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -928,
+        192
+      ],
+      "id": "9fb75cac-bd2f-40da-bf27-2699c4bd0bcc",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1n5YOyFO_jZTxUgXKJFoFaCjxZ_h4TaAhOpTMUY6QBZc",
+          "mode": "list",
+          "cachedResultName": "Feedback",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1n5YOyFO_jZTxUgXKJFoFaCjxZ_h4TaAhOpTMUY6QBZc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1n5YOyFO_jZTxUgXKJFoFaCjxZ_h4TaAhOpTMUY6QBZc/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Customer Name": "={{ $('Webhook').item.json.body.body.name }}",
+            "Review": "={{ $json.text }}",
+            "Cust Email": "={{ $('Webhook').item.json.body.body.email }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Customer Name",
+              "displayName": "Customer Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Review",
+              "displayName": "Review",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Cust Email",
+              "displayName": "Cust Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -448,
+        256
+      ],
+      "id": "69d4c005-5137-4693-900b-1f61195330c9",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "RR9cDB7wNsNDx8Kl",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "submit-your-review",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1136,
+        112
+      ],
+      "id": "dae86dbb-0a8a-4bd7-a197-4747b9b93765",
+      "name": "Webhook",
+      "webhookId": "7a021c38-d6b1-417d-96d9-ff5ad7d1209a"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-4o-mini",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -800,
+        352
+      ],
+      "id": "fd214d92-058a-4536-afac-0a96813b0ce7",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "c0Het3rkd24gtNR4",
+          "name": "OpenRouter account"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "host": "ayush24.app.n8n.cloud",
+            "user-agent": "Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.70.5)",
+            "content-length": "102",
+            "accept": "*/*",
+            "accept-encoding": "gzip, br",
+            "accept-language": "*",
+            "cdn-loop": "cloudflare; loops=1; subreqs=1",
+            "cf-connecting-ip": "2406:da1a:c77:d405:6ea7:4c62:76de:2a14",
+            "cf-ew-via": "15",
+            "cf-ipcountry": "IN",
+            "cf-ray": "9d4da5ffddc647b9-BOM",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "cf-worker": "n8n.cloud",
+            "content-type": "application/json",
+            "x-forwarded-for": "2406:da1a:c77:d405:6ea7:4c62:76de:2a14, 172.69.86.254",
+            "x-forwarded-host": "ayush24.app.n8n.cloud",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "traefik-prod-users-gwc-69-5b9dd78d9-xjftg",
+            "x-is-trusted": "yes",
+            "x-real-ip": "2406:da1a:c77:d405:6ea7:4c62:76de:2a14"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "body": {
+              "body": {
+                "name": "PodeAppa",
+                "email": "apsingekarpadmaksh@gmail.com",
+                "review": "DECENT QUALITY"
+              }
+            }
+          },
+          "webhookUrl": "https://ayush24.app.n8n.cloud/webhook/submit-your-review",
+          "executionMode": "production"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Send a message1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a message2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "12bbefb4-0ef4-409c-9ea2-f90e196fd9d1",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "fe45cd4e02e617326550e992fbc2b3658d75c03bf0882aa0182f05f16c433877"
+  },
+  "id": "kkbumbW0zKwZ9Vim",
+  "tags": []
+}

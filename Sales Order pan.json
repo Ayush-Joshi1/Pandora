@@ -1,0 +1,782 @@
+{
+  "name": "Sales Order",
+  "nodes": [
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1tDsJAkS1zccKbCahUo8F0hAnGCgJ6pTMDit979Ucsw4",
+          "mode": "list",
+          "cachedResultName": "Stocklist",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1tDsJAkS1zccKbCahUo8F0hAnGCgJ6pTMDit979Ucsw4/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1tDsJAkS1zccKbCahUo8F0hAnGCgJ6pTMDit979Ucsw4/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ProductName                                   ",
+              "lookupValue": "={{ $json.output.product_name }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -704,
+        384
+      ],
+      "id": "f9e9ab22-1fe3-486d-9f0d-ac612713cb69",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "RR9cDB7wNsNDx8Kl",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const firstItem = items[0].json;\n\nlet senderEmail = 'noreply@example.com';\n\nif (firstItem.fromEmail) {\n    senderEmail = firstItem.fromEmail;\n} else if (firstItem.from && Array.isArray(firstItem.from) && firstItem.from[0].address) {\n    senderEmail = firstItem.from[0].address;\n} else if (firstItem.from && typeof firstItem.from === 'string') {\n    const match = firstItem.from.match(/<(.+)>/);\n    if (match) senderEmail = match[1];\n} else if (firstItem.sender) {\n    senderEmail = firstItem.sender;\n}\n\nreturn [{ json: { ...firstItem, senderEmail } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        48,
+        528
+      ],
+      "id": "e49253bc-814e-4c7d-bbae-58bde1543901",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "jsCode": "const inputItems = $input.all();\nconst order = $(\"Basic LLM Chain\").first().json.output;\n\nreturn inputItems.map(item => {\n  const data = item.json;\n  \n  // Build the message using the structured data from the AI\n  const message = `Hello ${order.customer_name}, Thank you for your order! We have received your request for ${order.quantity} units of the ${order.product_name}. Your order is now being processed and will be shipped to ${order.shipping_address}. If you have any questions, please reply to this email. Thanks, Your E-commerce Team`;\n\n  return { json: { ...data, message } };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        112,
+        320
+      ],
+      "id": "654cdd62-d27e-4ef9-912d-35c2114b67e7",
+      "name": "Code in JavaScript1",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst firstItem = items[0].json;\nlet senderEmail = \"\";\n\n// --- 1. Handle Tally.so Webhook Data ---\n// Tally sends an array of fields in 'data.fields'\nif (firstItem.data && Array.isArray(firstItem.data.fields)) {\n  const emailField = firstItem.data.fields.find(f => \n    f.type === 'email' || \n    f.key?.toLowerCase().includes('email') || \n    f.label?.toLowerCase().includes('email')\n  );\n  senderEmail = emailField ? emailField.value : \"\";\n} \n\n// --- 2. Handle Gmail Trigger Data (Existing Logic) ---\nelse if (firstItem.from && Array.isArray(firstItem.from) && firstItem.from[0].address) {\n  senderEmail = firstItem.from[0].address;\n} \nelse if (firstItem.from && typeof firstItem.from === \"string\") {\n  const match = firstItem.from.match(/<(.+)>/);\n  senderEmail = match ? match[1] : firstItem.from;\n} \nelse if (firstItem.From && typeof firstItem.From === \"string\") {\n  const match = firstItem.From.match(/<(.+)>/);\n  senderEmail = match ? match[1] : firstItem.From;\n}\n\n// Return the original data plus the extracted senderEmail \n// so the rest of the workflow nodes can still see the raw input\nreturn [{ json: { ...firstItem, senderEmail } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1184,
+        384
+      ],
+      "id": "3f1cbf2e-82c2-4370-9954-f5a54bda3a99",
+      "name": "Precode Javascript"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n  \"parameters\": {\n    \"keepOnlySet\": false,\n    \"values\": {\n      \"string\": [\n        {\n          \"name\": \"senderEmail\",\n          \"value\": \"={{ $json.senderEmail }}\"\n        }\n      ]\n    },\n    \"options\": {}\n  },\n  \"name\": \"true set\",\n  \"type\": \"n8n-nodes-base.set\",\n  \"typeVersion\": 3.4,\n  \"id\": \"83df720f-6ac5-40a6-a3d1-79d6807313e1\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        704,
+        176
+      ],
+      "id": "866960dc-030d-4e53-8630-86db633024eb",
+      "name": "true set"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n  \"parameters\": {\n    \"keepOnlySet\": false,\n    \"values\": {\n      \"string\": [\n        {\n          \"name\": \"senderEmail\",\n          \"value\": \"={{ $json.senderEmail }}\"\n        }\n      ]\n    },\n    \"options\": {}\n  },\n  \"name\": \"false set\",\n  \"type\": \"n8n-nodes-base.set\",\n  \"typeVersion\": 3.4,\n  \"id\": \"82f654cf-5cee-4bc3-ba40-987200a8e5ea\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        608,
+        752
+      ],
+      "id": "c62dcdaf-9d6c-4aa6-8764-726c21ee8ce8",
+      "name": "false set"
+    },
+    {
+      "parameters": {
+        "jsCode": "const stockRows = $input.all().map(item => item.json);\nconst order = $(\"Basic LLM Chain\").first().json.output;\n\n// detect real header names dynamically\nconst productKey = Object.keys(stockRows[0]).find(k =>\n  k.trim() === \"ProductName\"\n);\n\nconst quantityKey = Object.keys(stockRows[0]).find(k =>\n  k.trim() === \"QuantityInStock\"\n);\n\nconst stockRow = stockRows.find(row =>\n  row[productKey]?.trim().toLowerCase() ===\n  order.product_name?.trim().toLowerCase()\n);\n\nif (!stockRow) {\n  return [{\n    json: {\n      order_product_name: order.product_name,\n      order_quantity: Number(order.quantity),\n      stock_product_name: null,\n      stock_quantity: 0,\n      productFound: false\n    }\n  }];\n}\n\nreturn [{\n  json: {\n    order_product_name: order.product_name,\n    order_quantity: Number(order.quantity),\n    stock_product_name: stockRow[productKey],\n    stock_quantity: Number(stockRow[quantityKey]),\n    productFound: true\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -512,
+        384
+      ],
+      "id": "10d7ed3c-85d3-46db-8fb6-3761b30bd63a",
+      "name": "loop try",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1clVno7_Hc7PRqdTHND8PwEYHUUzFix7a_OXtYFeTm4E",
+          "mode": "list",
+          "cachedResultName": "Customers",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1clVno7_Hc7PRqdTHND8PwEYHUUzFix7a_OXtYFeTm4E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1clVno7_Hc7PRqdTHND8PwEYHUUzFix7a_OXtYFeTm4E/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Quantity": "={{ $('Basic LLM Chain').first().json.output.quantity }}",
+            "Name": "={{ $('Basic LLM Chain').first().json.output.customer_name }}",
+            "Special Instruction": "={{ $('Basic LLM Chain').first().json.output.special_instructions }}",
+            "Email ": "={{ $('Precode Javascript').first().json.senderEmail }}",
+            "Product Name": "={{ $('Basic LLM Chain').first().json.output.product_name }}",
+            "Shipping Addres": "={{ $('Basic LLM Chain').first().json.output.shipping_address }}",
+            "Price of Product": "={{ $('Get row(s) in sheet').first().json.Price }}",
+            "Total Price": "={{ Number($('Get row(s) in sheet').first().json.Price) * Number($('loop try').item.json.order_quantity) }}\n"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Email ",
+              "displayName": "Email ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Product Name",
+              "displayName": "Product Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Quantity",
+              "displayName": "Quantity",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Shipping Addres",
+              "displayName": "Shipping Addres",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Special Instruction",
+              "displayName": "Special Instruction",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Price of Product",
+              "displayName": "Price of Product",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Total Price",
+              "displayName": "Total Price",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -112,
+        64
+      ],
+      "id": "4da3fd3a-6908-4d88-ab2a-23fd0ee24e46",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "RR9cDB7wNsNDx8Kl",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "1978aa1b-1b83-4d12-b4e2-74a6ef511f18",
+              "leftValue": "={{ $('Basic LLM Chain').all()[0].json.output.product_name}}",
+              "rightValue": "={{ $json.order_product_name }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "36124061-4989-44a7-b963-d93e29b2ada6",
+              "leftValue": "={{ $item(0).$node[\"Basic LLM Chain\"].json.output.quantity }}",
+              "rightValue": "={{ $json.stock_quantity }}",
+              "operator": {
+                "type": "number",
+                "operation": "lte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -288,
+        384
+      ],
+      "id": "92cdc7cd-b66d-4ba4-995f-77889cfe92bd",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Webhook').item.json.body.customer_email }}",
+        "subject": "=Order Confirmed: {{ $('Basic LLM Chain').first().json.output.product_name }}",
+        "message": "=Dear {{ $('Webhook').item.json.body.customer_name }},<br><br>Thank you for your recent order. We are pleased to confirm that we have received your request for {{ $('Basic LLM Chain').all()[0].json.output.quantity }} units of {{ $('Basic LLM Chain').all()[0].json.output.product_name }}.<br>Order Details:<br>• Product: {{ $('Basic LLM Chain').all()[0].json.output.product_name }}<br>• Quantity: {{ $('Basic LLM Chain').all()[0].json.output.quantity }}<br>\n• **Price per Unit:** ₹{{ $('Get row(s) in sheet').first().json.Price }}<br>\n• **Total Amount:** ₹{{ Number($('Get row(s) in sheet').first().json.Price) * Number($('loop try').item.json.order_quantity) }}<br><br>Your order is currently being processed. If you have any questions, please feel free to reply directly to this email.\n<br>✨ Recommended for you:\n{{ $('Basic LLM Chain1').item.json.text }}<br><br>Best regards,<br>The E-commerce Team",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        864,
+        336
+      ],
+      "id": "71e18b0c-0188-40d3-8870-aea25188df61",
+      "name": "Send a message2",
+      "webhookId": "042e3a88-d60e-4eff-948c-455201e94ff4",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "qArxkDXBnuNhnUXb",
+          "name": "Gmail account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Webhook').item.json.body.customer_email }}",
+        "subject": "=Out of Stock:{{ $('Basic LLM Chain').first().json.output.product_name }}",
+        "emailType": "text",
+        "message": "={{ $('Basic LLM Chain2').item.json.text }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        752,
+        560
+      ],
+      "id": "76ce1a74-4da1-42ab-8be3-dc0d63ccc52c",
+      "name": "Send a message3",
+      "webhookId": "2d229019-a019-428e-a53c-3a9cdf526e6e",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "qArxkDXBnuNhnUXb",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "tally-sales-order",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1408,
+        288
+      ],
+      "id": "90b00786-7595-4e30-a130-a421968cfcd8",
+      "name": "Webhook",
+      "webhookId": "d5ed104e-a7b6-436c-8f01-75b6d18c0462"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"product_name\": \"Ultrabook Pro\",\n  \"quantity\": 1,\n  \"customer_name\": \"John Smith\",\n  \"shipping_address\": \"123 Automation Drive, Tech City, 54321\",\n  \"special_instructions\": \"Please include a note with 'Happy Birthday!' on it.\"\n}",
+        "autoFix": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -944,
+        576
+      ],
+      "id": "f87a65e1-f529-4922-acfb-b8db442901f0",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Instructions:\n1. Ignore any HTML tags and extra formatting. Extract the **actual text content**.\n2. Extract the following information and return a JSON object with a single key \"output\":\n   - product_name\n   - quantity\n   - customer_name\n   - shipping_address\n   - special_instructions\n3. If any field is missing, use \"N/A\" for text fields and 0 for quantity.\n4. Return **only the JSON object**, nothing else.\n\nText to analyze:\n{{ $json.snippet || JSON.stringify($json.body) || JSON($json) }}",
+        "hasOutputParser": true,
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        -992,
+        384
+      ],
+      "id": "3e821e6a-4357-4904-b944-8d6c97dbba65",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=The customer just bought a {{ $json.order_product_name }}. Based on this product, suggest two small, relevant accessories that would improve their experience. Keep the tone helpful and concise."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        352,
+        96
+      ],
+      "id": "99cbd4dd-a3f6-4d97-b761-851fbf4646f1",
+      "name": "Basic LLM Chain1"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('loop try').item.json.order_product_name }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=You are a professional e-commerce customer support assistant.\n\nWrite a formal and empathetic out-of-stock email.\n\nCustomer name: {{ $json.customer_name }}\nProduct name: {{ $json.order_product_name }}\n\nRequirements:\n- Start with:\n  Subject: Update on Your Order – {{ $json.order_product_name }}\n\n- Then begin the email with:\n  Dear {{ $('Webhook').first().json.body.body.data.fields[0].value }},\n\n- Apologize sincerely that the product is currently out of stock.\n- Show empathy and understanding.\n- Mention that similar products are available.\n- Clearly say that they can reply to this email to swap their order.\n- Keep it professional and concise.\n- End with:\n\n  Best regards,  \n  E-Commerce Team.\n\nDo not use placeholders like [Customer Name].\nDo not add extra explanations.\nOnly return the email content.\n"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        272,
+        784
+      ],
+      "id": "d1c48fc3-83cd-455e-9a98-6adfaf1a3d80",
+      "name": "Basic LLM Chain2"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-4o-mini",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -1056,
+        608
+      ],
+      "id": "a378b2d0-917c-42a8-997d-0c78b8e99263",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "c0Het3rkd24gtNR4",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -864,
+        768
+      ],
+      "id": "d7c00772-b0cc-4c5e-b64c-88408dda3956",
+      "name": "OpenRouter Chat Model1",
+      "credentials": {
+        "openRouterApi": {
+          "id": "c0Het3rkd24gtNR4",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-4o-mini",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        208,
+        960
+      ],
+      "id": "cb776ba4-ce40-41f8-b2d5-c20e2b6836d5",
+      "name": "OpenRouter Chat Model2",
+      "credentials": {
+        "openRouterApi": {
+          "id": "c0Het3rkd24gtNR4",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-4o-mini",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        432,
+        304
+      ],
+      "id": "55e2e83b-3b8a-4dfe-9116-6e02ee271fc5",
+      "name": "OpenRouter Chat Model3",
+      "credentials": {
+        "openRouterApi": {
+          "id": "c0Het3rkd24gtNR4",
+          "name": "OpenRouter account"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "host": "techy.app.n8n.cloud",
+            "user-agent": "Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.70.3)",
+            "content-length": "366",
+            "accept": "*/*",
+            "accept-encoding": "gzip, br",
+            "accept-language": "*",
+            "cdn-loop": "cloudflare; loops=1; subreqs=1",
+            "cf-connecting-ip": "2406:da1a:c77:d40b:3338:2c9d:eeae:4297",
+            "cf-ew-via": "15",
+            "cf-ipcountry": "IN",
+            "cf-ray": "9d262887024c2e46-BOM",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "cf-worker": "n8n.cloud",
+            "content-type": "application/json",
+            "x-forwarded-for": "2406:da1a:c77:d40b:3338:2c9d:eeae:4297, 162.158.227.205",
+            "x-forwarded-host": "techy.app.n8n.cloud",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "traefik-prod-users-gwc-117-54c9d54758-729ln",
+            "x-is-trusted": "yes",
+            "x-real-ip": "2406:da1a:c77:d40b:3338:2c9d:eeae:4297"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "order_id": "SA-20260223-4760",
+            "product_id": "27dc0961-49a9-4377-b982-b84c2477ae2a",
+            "product_name": "Smart Air Pump for Tires",
+            "quantity": 10,
+            "unit_price": 85,
+            "total_price": 850,
+            "customer_name": "Techy Boyz",
+            "customer_email": "tula.kay.karaych1@gmail.com",
+            "shipping_address": "CSMT MUMBAI",
+            "special_instructions": "HBD ABHII",
+            "user_id": "b7e99754-79a6-4b92-84d3-88bfa4e997cc"
+          },
+          "webhookUrl": "https://techy.app.n8n.cloud/webhook/tally-sales-order",
+          "executionMode": "production"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "loop try",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Precode Javascript": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "true set": {
+      "main": [
+        [
+          {
+            "node": "Send a message2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "false set": {
+      "main": [
+        [
+          {
+            "node": "Send a message3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "loop try": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Precode Javascript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain1": {
+      "main": [
+        [
+          {
+            "node": "true set",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain2": {
+      "main": [
+        [
+          {
+            "node": "false set",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Structured Output Parser",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain2",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "da8c20df-a48a-4fc6-8b0f-1972f7be2ef1",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "fe45cd4e02e617326550e992fbc2b3658d75c03bf0882aa0182f05f16c433877"
+  },
+  "id": "QkyTxUUfg7Slf5WS",
+  "tags": []
+}

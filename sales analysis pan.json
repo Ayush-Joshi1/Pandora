@@ -1,0 +1,436 @@
+{
+  "name": "[final] sales analysis",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 23 * * *"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -416,
+        128
+      ],
+      "id": "9667cc18-aaef-4a40-a3cb-360c7dfa8680",
+      "name": "Daily at 11 PM"
+    },
+    {
+      "parameters": {
+        "jsCode": "// This forces the date to be calculated based on a specific timezone\nconst today = new Date().toLocaleString(\"en-IN\", {timeZone: \"Asia/Kolkata\"});\n\n// The string comes back as \"DD/MM/YYYY, HH:MM:SS\", so we split it\nconst datePart = today.split(',')[0]; \nconst [day, month, year] = datePart.split('/');\n\nreturn {\n  json: {\n    todayDate: `${day.padStart(2, '0')}-${month.padStart(2, '0')}-${year}`\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -224,
+        128
+      ],
+      "id": "579e7752-048c-4c18-9a98-c87aad352b1d",
+      "name": "Get Today's Date"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1mHPgQNoonGPPNIKffOKTiUVslSc0453BUlL03ChkeEU",
+          "mode": "list",
+          "cachedResultName": "analysis",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mHPgQNoonGPPNIKffOKTiUVslSc0453BUlL03ChkeEU/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mHPgQNoonGPPNIKffOKTiUVslSc0453BUlL03ChkeEU/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Date",
+              "lookupValue": "={{ $json.todayDate }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -16,
+        128
+      ],
+      "id": "f12c6778-1cba-4fd2-8343-307d8f68d9d2",
+      "name": "Fetch Today's Sales",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "RR9cDB7wNsNDx8Kl",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const salesData = $input.all();\n// Use .first() to ensure we get the date regardless of branch depth\nconst todayDate = $('Get Today\\'s Date').first().json.todayDate;\n\nif (salesData.length === 0 || (salesData.length === 1 && !salesData[0].json[\"Product Name\"])) {\n  return {\n    json: {\n      date: todayDate,\n      totalRevenue: 0,\n      totalOrders: 0,\n      salesList: \"No sales today\"\n    }\n  };\n}\n\nlet totalRevenue = 0;\nconst productList = [];\n\nfor (const sale of salesData) {\n  const price = parseFloat(sale.json[\"Total Price\"]) || 0;\n  const product = sale.json[\"Product Name\"] || \"Unknown\";\n  const qty = sale.json[\"Quantity\"] || \"0\";\n  \n  totalRevenue += price;\n  productList.push(`${product} (Qty: ${qty}, Price: ${price})`);\n}\n\nreturn {\n  json: {\n    date: todayDate,\n    totalRevenue: totalRevenue.toFixed(2),\n    totalOrders: salesData.length,\n    salesList: productList.join(\"; \")\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        176,
+        128
+      ],
+      "id": "967ff847-e6eb-4fea-8738-85c56135341f",
+      "name": "Calculate Sales Metrics"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a sales analyst. Summarize today's sales and provide insights.\n\nSales Data for {{ $json.date }}:\n- Total Revenue: ${{ $json.totalRevenue }}\n- Total Orders: {{ $json.totalOrders }}\n- Sales List: {{ $json.salesList }}\n\nProvide a brief analysis in JSON format (no markdown):\n{\n  \"summary\": \"2-3 sentence summary of today's performance\",\n  \"status\": \"Excellent\" or \"Good\" or \"Poor\" or \"Critical\",\n  \"recommendation\": \"One actionable recommendation\"\n}\n\nStatus Guide:\n- Excellent: Revenue >= $600\n- Good: Revenue >= $300\n- Poor: Revenue > $0 but < $300\n- Critical: Revenue = $0",
+        "hasOutputParser": true,
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        320,
+        -64
+      ],
+      "id": "9a260985-3372-4185-ab98-870ef2ed0aa5",
+      "name": "AI Sales Summary"
+    },
+    {
+      "parameters": {
+        "jsCode": "const metrics = $('Calculate Sales Metrics').first().json;\nconst aiOutput = $input.first().json;\n\n// Handle different AI response formats\nlet aiData = aiOutput;\nif (typeof aiOutput.text === 'string') {\n    try {\n        // Remove markdown formatting if present\n        const cleanJson = aiOutput.text.replace(/```json|```/g, '');\n        aiData = JSON.parse(cleanJson);\n    } catch (e) {\n        aiData = { summary: aiOutput.text, status: \"Unknown\", recommendation: \"Check logs\" };\n    }\n}\n\nreturn {\n  json: {\n    Date: metrics.date,\n    \"Total Revenue\": String(metrics.totalRevenue),\n    \"Total Orders\": String(metrics.totalOrders),\n    \"AI Summary\": aiData.summary || \"No summary available\",\n    \"Status\": aiData.status || \"Unknown\",\n    recommendation: aiData.recommendation || \"Continue monitoring\",\n    isUrgent: (aiData.status === \"Poor\" || aiData.status === \"Critical\")\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        576,
+        128
+      ],
+      "id": "2ad3d49c-76a3-48bd-ad05-9b4a520983ce",
+      "name": "Prepare Report"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "13rM7VgxMd0FRS007XGzMo0Al3DpVq9iio_2Gmumr15A",
+          "mode": "list",
+          "cachedResultName": "report",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/13rM7VgxMd0FRS007XGzMo0Al3DpVq9iio_2Gmumr15A/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/13rM7VgxMd0FRS007XGzMo0Al3DpVq9iio_2Gmumr15A/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Date": "={{ $json.Date }}",
+            "Total Revenue": "={{ $json['Total Revenue'] }}",
+            "Total Orders": "={{ $json['Total Orders'] }}",
+            "AI Summary": "={{ $json['AI Summary'] }}",
+            "Status": "={{ $json.Status }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Total Revenue",
+              "displayName": "Total Revenue",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Total Orders",
+              "displayName": "Total Orders",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "AI Summary",
+              "displayName": "AI Summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        784,
+        128
+      ],
+      "id": "e71299eb-b1dc-42b0-b0e8-8c85ea0115a3",
+      "name": "Log to Report Sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "RR9cDB7wNsNDx8Kl",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "urgent-check",
+              "leftValue": "={{ $('Prepare Report').item.json.isUrgent }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        976,
+        128
+      ],
+      "id": "983e6b23-975f-454e-9480-4d560ba5a518",
+      "name": "Is Urgent?"
+    },
+    {
+      "parameters": {
+        "sendTo": "boyztechy2@gmail.com",
+        "subject": "=🚨 URGENT: {{ $json.Status }} Sales - {{ $json.Date }}",
+        "message": "=<div style=\"font-family: Arial, sans-serif; max-width: 600px;\">\n  <div style=\"background: #dc2626; color: white; padding: 20px; text-align: center;\">\n    <h2 style=\"margin: 0;\">🚨 URGENT SALES ALERT</h2>\n    <p style=\"margin: 10px 0 0 0;\">{{ $json.Date }}</p>\n  </div>\n  \n  <div style=\"padding: 20px; background: #fef2f2;\">\n    <div style=\"background: white; border-left: 4px solid #dc2626; padding: 15px; margin-bottom: 15px;\">\n      <h3 style=\"margin: 0 0 10px 0; color: #dc2626;\">Performance Alert</h3>\n      <p style=\"margin: 5px 0;\"><strong>Revenue:</strong> ${{ $json['Total Revenue'] }}</p>\n      <p style=\"margin: 5px 0;\"><strong>Orders:</strong> {{ $json['Total Orders'] }}</p>\n      <p style=\"margin: 5px 0;\"><strong>Status:</strong> {{ $json.Status }}</p>\n    </div>\n    \n    <div style=\"background: white; padding: 15px; margin-bottom: 15px;\">\n      <h3 style=\"margin: 0 0 10px 0;\">AI Analysis</h3>\n      <p style=\"margin: 0; color: #374151;\">{{ $json['AI Summary'] }}</p>\n    </div>\n    \n    <div style=\"background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px;\">\n      <h3 style=\"margin: 0 0 10px 0; color: #92400e;\">⚡ Recommended Action</h3>\n      <p style=\"margin: 0; color: #78350f;\">{{ $json.recommendation }}</p>\n    </div>\n  </div>\n  \n  <div style=\"text-align: center; padding: 10px; color: #6b7280; font-size: 12px;\">\n    Automated Alert - Immediate Attention Required\n  </div>\n</div>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1184,
+        16
+      ],
+      "id": "5480cfd5-87bb-453b-b84e-edb38d21f04b",
+      "name": "Send Urgent Alert",
+      "webhookId": "9f6a8108-a59c-4e59-bddf-2cda663b241f",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "qArxkDXBnuNhnUXb",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "boyztechy2@gmail.com",
+        "subject": "=📊 Daily Sales Report - {{ $json.Date }} ({{ $json.Status }})",
+        "message": "=<div style=\"font-family: Arial, sans-serif; max-width: 600px;\">\n  <div style=\"background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center;\">\n    <h2 style=\"margin: 0;\">📊 Daily Sales Report</h2>\n    <p style=\"margin: 5px 0 0 0;\">{{ $json.Date }}</p>\n  </div>\n  \n  <div style=\"padding: 20px; background: #f9fafb;\">\n    <div style=\"background: white; border-radius: 8px; padding: 20px; margin-bottom: 15px;\">\n      <h3 style=\"margin: 0 0 15px 0; color: #1f2937;\">Performance Summary</h3>\n      <table style=\"width: 100%;\">\n        <tr>\n          <td style=\"padding: 8px 0; color: #6b7280;\">💰 Revenue:</td>\n          <td style=\"padding: 8px 0; font-weight: bold; text-align: right;\">${{ $json['Total Revenue'] }}</td>\n        </tr>\n        <tr>\n          <td style=\"padding: 8px 0; color: #6b7280;\">📦 Orders:</td>\n          <td style=\"padding: 8px 0; font-weight: bold; text-align: right;\">{{ $json['Total Orders'] }}</td>\n        </tr>\n        <tr>\n          <td style=\"padding: 8px 0; color: #6b7280;\">📊 Status:</td>\n          <td style=\"padding: 8px 0; font-weight: bold; text-align: right;\">{{ $json.Status }}</td>\n        </tr>\n      </table>\n    </div>\n    \n    <div style=\"background: white; border-radius: 8px; padding: 20px; margin-bottom: 15px;\">\n      <h3 style=\"margin: 0 0 10px 0; color: #1f2937;\">🤖 AI Insights</h3>\n      <p style=\"margin: 0 0 15px 0; color: #374151; line-height: 1.6;\">{{ $json['AI Summary'] }}</p>\n      <div style=\"background: #f0fdf4; border-left: 3px solid #10b981; padding: 10px;\">\n        <p style=\"margin: 0; color: #065f46;\"><strong>💡 Recommendation:</strong> {{ $json.recommendation }}</p>\n      </div>\n    </div>\n  </div>\n  \n  <div style=\"text-align: center; padding: 10px; color: #6b7280; font-size: 12px;\">\n    Automated by Sales AI Assistant\n  </div>\n</div>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1184,
+        224
+      ],
+      "id": "7d058c00-b0c9-48f3-8b3c-38eaaca0801c",
+      "name": "Send Normal Report",
+      "webhookId": "a1d204db-71da-48b2-b0bb-52c96f321d6f",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "qArxkDXBnuNhnUXb",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-4o-mini",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        320,
+        224
+      ],
+      "id": "32d50839-dd44-408a-b667-20a132b7a02a",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "c0Het3rkd24gtNR4",
+          "name": "OpenRouter account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Daily at 11 PM": {
+      "main": [
+        [
+          {
+            "node": "Get Today's Date",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Today's Date": {
+      "main": [
+        [
+          {
+            "node": "Fetch Today's Sales",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Today's Sales": {
+      "main": [
+        [
+          {
+            "node": "Calculate Sales Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Sales Metrics": {
+      "main": [
+        [
+          {
+            "node": "AI Sales Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Sales Summary": {
+      "main": [
+        [
+          {
+            "node": "Prepare Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Report": {
+      "main": [
+        [
+          {
+            "node": "Log to Report Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log to Report Sheet": {
+      "main": [
+        [
+          {
+            "node": "Is Urgent?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Urgent?": {
+      "main": [
+        [
+          {
+            "node": "Send Urgent Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Normal Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Sales Summary",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "630aa281-b8ee-468e-8c0a-36ff628f1780",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "fe45cd4e02e617326550e992fbc2b3658d75c03bf0882aa0182f05f16c433877"
+  },
+  "id": "i0alZphG4VjUPJcO",
+  "tags": []
+}

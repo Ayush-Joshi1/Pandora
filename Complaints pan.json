@@ -1,0 +1,452 @@
+{
+  "name": "Complaints",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "sales-complaint",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1488,
+        336
+      ],
+      "id": "54a4657f-a219-465c-904a-4e8e493d13c2",
+      "name": "Webhook",
+      "webhookId": "23fd09c7-aca2-4e8e-8a84-b19cc69aa5d6"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Analyze this customer input and extract the key information:{{ $json.body.body.data.fields[2].value }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=You are a strict rule-based sentiment classifier used in an automation system.\n\nYou must follow classification rules EXACTLY as written.\nDo NOT soften tone.\nDo NOT reinterpret emotional intensity.\nDo NOT be polite in classification.\n\nSENTIMENT RULE ENGINE:\n\nIf the message contains ANY of the following:\n- ALL CAPS words longer than 2 letters\n- Words like: angry, worst, terrible, horrible, bad, useless\n- Urgent demands like: replace, refund, immediately, as soon as possible\n- Aggressive tone or dissatisfaction in strong wording\n- Repeated punctuation or emotional intensity\n\nThen sentiment MUST be: \"Angry\"\n\nIf message contains complaint but not aggressive tone:\n→ \"Frustrated\"\n\nIf message is factual and calm:\n→ \"Neutral\"\n\nIf message expresses appreciation:\n→ \"Positive\"\n\nIMPORTANT:\nIf there is ANY strong negative expression, you MUST choose \"Angry\".\nNever downgrade strong emotion to Neutral.\n\nRespond ONLY with raw JSON.\nNo markdown.\nNo explanations.\n\nSchema:\n\n{\n  \"category\": \"Technical | Billing | Shipping | General\",\n  \"sentiment\": \"Positive | Neutral | Frustrated | Angry\",\n  \"suggestedAction\": \"One short internal instruction\",\n  \"draftResponse\": \"Polite empathetic response\"\n}"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        -1232,
+        336
+      ],
+      "id": "337ddd74-4167-488c-a87f-1e4b83a4d783",
+      "name": "Classify Complaint with LLM"
+    },
+    {
+      "parameters": {
+        "jsCode": "const currentTimeISO = new Date().toISOString();\n\ntry {\n  const rawText = $input.first().json.text || $input.first().json.output || '{}';\n  let aiData = {};\n  try { aiData = JSON.parse(rawText); } catch (e) { aiData = {}; }\n\n  const originalData = $('Webhook').first().json;\n  const complaintTextRaw = originalData.body.body.data.fields[2].value;\n  const complaintText = complaintTextRaw.toLowerCase();\n\n  // ✅ Word-boundary safe matching — avoids \"urgent\" hitting \"urgently\"\n  function matchesAny(text, keywords) {\n    return keywords.some(word => {\n      // Escape special regex characters in keyword\n      const escaped = word.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&');\n      const regex = new RegExp(`\\\\b${escaped}\\\\b`, 'i');\n      return regex.test(text);\n    });\n  }\n\n  // ✅ Genuinely aggressive/escalatory angry keywords only\n  const angryKeywords = [\n    'furious', 'outraged', 'livid', 'pissed',\n    'worst', 'terrible', 'horrible', 'awful', 'pathetic', 'useless',\n    'disgusting', 'unacceptable', 'shameful', 'absurd', 'incompetent',\n    'scam', 'fraud', 'fake', 'cheated', 'lied', 'dishonest', 'misleading',\n    'trash', 'garbage', 'nonsense',\n    'legal action', 'lawyer', 'sue', 'consumer court',\n    'police complaint', 'court notice', 'legal notice', 'cyber crime',\n    'file a complaint', 'report you', 'ombudsman',\n    'bad review', '1 star', 'one star', 'negative review',\n    'expose this', 'viral', 'tell everyone', 'share everywhere',\n    'post publicly', 'social media',\n    'never again', 'never buying again', 'lost trust',\n    'full refund', 'refund immediately', 'money back', 'return my money',\n    'cancel immediately', 'take it back',\n    'how dare you', 'this is ridiculous', 'this is unacceptable',\n    'highly disappointed', 'extremely disappointed', 'extremely unhappy',\n    'fed up', 'sick of this', 'had enough', 'done with this',\n    'wasting my time', 'waste of money',\n    'manager immediately', 'escalate this', 'higher authority',\n    'fix this asap', 'take action immediately', 'instant refund'\n  ];\n\n  // ✅ Frustrated = complaint tone, not rage\n  const frustratedKeywords = [\n    'frustrated', 'disappointed', 'annoyed', 'irritated', 'upset',\n    'issue', 'problem', 'delay', 'delayed', 'slow', 'not happy',\n    'concern', 'confused', 'unclear', 'waiting', 'still waiting',\n    'no response', 'no reply', 'no update', 'not resolved',\n    'still not resolved', 'follow up', 'please check',\n    'need update', 'not working', 'does not work', 'stopped working',\n    'damaged', 'broken', 'defective', 'faulty',\n    'wrong product', 'missing item', 'poor packaging',\n    'late delivery', 'not delivered', 'bad service',\n    'urgent', 'urgently', 'as soon as possible', 'immediately',\n    'please help', 'need help', 'replace', 'replacement', 'refund'\n  ];\n\n  // ✅ ALL CAPS detection (exclude short all-caps like \"OK\", \"TV\")\n  const isAllCaps =\n    complaintTextRaw.replace(/\\s/g, '').length > 15 &&\n    complaintTextRaw === complaintTextRaw.toUpperCase();\n\n  // ✅ Repeated punctuation as anger signal\n  const hasRepeatedPunctuation = /[!?]{2,}/.test(complaintTextRaw);\n\n  let sentiment = 'Neutral';\n\n  if (isAllCaps || hasRepeatedPunctuation || matchesAny(complaintText, angryKeywords)) {\n    sentiment = 'Angry';\n  } else if (matchesAny(complaintText, frustratedKeywords)) {\n    sentiment = 'Frustrated';\n  }\n\n  return {\n    json: {\n      timestamp_utc: currentTimeISO,\n      Name: originalData.body.body.data.fields[0].value,\n      Contact: originalData.body.body.data.fields[1].value,\n      Description: complaintTextRaw,\n      Category: aiData.category || 'General',\n      Sentiment: sentiment,\n      SuggestedAction: aiData.suggestedAction || 'Review manually',\n      DraftResponse: aiData.draftResponse || 'We will get back to you shortly.'\n    }\n  };\n\n} catch (error) {\n  const originalData = $('Webhook').first().json;\n  return {\n    json: {\n      timestamp_utc: new Date().toISOString(),\n    Name: (originalData.body && originalData.body.body && originalData.body.body.data && originalData.body.body.data.fields && originalData.body?.body?.data?.fields?.[0]?.value) || 'Unknown',\n\n      Contact: (originalData.body?.body?.data?.fields?.[1]?.value) || '',\n  Description: (originalData.body?.body?.data?.fields?.[2]?.value) || '',\n      Sentiment: 'Neutral',\n      SuggestedAction: 'Review manually — processing error',\n      DraftResponse: 'We have received your complaint and will respond shortly.',\n      Error: error.message\n    }\n  };\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -880,
+        336
+      ],
+      "id": "005eb13d-7538-4ade-8a0a-57803d509953",
+      "name": "Process and Override Sentiment"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1wulC9Yzxjg7eOZh7LpYqb5mSzR00qOaH_R1Mj90MZbw",
+          "mode": "list",
+          "cachedResultName": "complaints",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1wulC9Yzxjg7eOZh7LpYqb5mSzR00qOaH_R1Mj90MZbw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1779129504,
+          "mode": "list",
+          "cachedResultName": "complaints - Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1wulC9Yzxjg7eOZh7LpYqb5mSzR00qOaH_R1Mj90MZbw/edit#gid=1779129504"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Name": "={{ $json.Name }}",
+            "Contact": "={{ $json.Contact }}",
+            "Description": "={{ $json.Description }}",
+            "AI:Category": "={{ $json.Category }}",
+            "AI:sentiment": "={{ $json.Sentiment }}",
+            "AI:Suggested Action": "={{ $json.SuggestedAction }}",
+            "AI:Draft Response": "={{ $json.DraftResponse }}",
+            "Status": "(to be approved)"
+          },
+          "matchingColumns": [
+            "Name"
+          ],
+          "schema": [
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Contact",
+              "displayName": "Contact",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Description",
+              "displayName": "Description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "AI:Category",
+              "displayName": "AI:Category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "AI:sentiment",
+              "displayName": "AI:sentiment",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "AI:Suggested Action",
+              "displayName": "AI:Suggested Action",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "AI:Draft Response",
+              "displayName": "AI:Draft Response",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -640,
+        336
+      ],
+      "id": "d30d403c-467a-4806-a471-892bdbcafb90",
+      "name": "Log to Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "RR9cDB7wNsNDx8Kl",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "3590fe78-477e-4ed2-b123-f604ddb961ef",
+              "leftValue": "={{ $json['AI:sentiment'] }}",
+              "rightValue": "Angry",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -432,
+        336
+      ],
+      "id": "d3e9bc0b-e414-44f3-bb48-adfae71aaf00",
+      "name": "Is Angry?"
+    },
+    {
+      "parameters": {
+        "sendTo": "support-team@yourcompany.com",
+        "subject": "=🔥 URGENT: High-Priority Complaint from {{ $('Webhook').item.json.body.body.body.data.fields[0].value }}",
+        "message": "=<div style=\"font-family: Arial, sans-serif; border: 2px solid #ff4d4d; border-radius: 8px; overflow: hidden; max-width: 640px;\">\n  <div style=\"background-color: #ff4d4d; color: white; padding: 15px; font-size: 20px; font-weight: bold;\">\n    🔥 High-Priority Support Alert\n  </div>\n  <div style=\"padding: 20px; color: #333; line-height: 1.8;\">\n    <p><strong>Customer Name:</strong> {{ $('Webhook').item.json.body.body.body.data.fields[0].value }}</p>\n    <p><strong>Customer Contact:</strong>{{ $('Webhook').item.json.body.body.body.data.fields[1].value }} </p>\n    <p><strong>Sentiment:</strong> <span style=\"color: #ff4d4d; font-weight: bold;\">{{ $('Log to Google Sheets').item.json['AI:sentiment'] }}</span></p>\n    <p><strong>Issue Category:</strong> {{ $('Log to Google Sheets').item.json['AI:Category'] }}</p>\n    <hr style=\"border: 0; border-top: 1px solid #eee;\">\n    <p><strong>Description:</strong><br><em>\"{{ $('Log to Google Sheets').item.json.Description }}\"</em></p>\n    <p><strong>AI Suggested Action:</strong><br>\n      <span style=\"background-color: #fff3f3; padding: 10px; border-left: 4px solid #ff4d4d; display: block;\">\n        {{ $('Log to Google Sheets').item.json['AI:Suggested Action'] }}\n      </span>\n    </p>\n    <p><strong>AI Draft Response to Customer:</strong><br>\n      <span style=\"background-color: #f0fff0; padding: 10px; border-left: 4px solid #4CAF50; display: block;\">\n        {{ $('Log to Google Sheets').item.json['AI:Draft Response'] }}\n      </span>\n    </p>\n    <a href=\"https://docs.google.com/spreadsheets/d/1wulC9Yzxjg7eOZh7LpYqb5mSzR00qOaH_R1Mj90MZbw\"\n       style=\"display: inline-block; background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-top: 20px;\">\n      View Full Log in Google Sheets\n    </a>\n  </div>\n</div>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        -144,
+        208
+      ],
+      "id": "38d28b79-ba83-4bcd-bf31-63ae6bfe4be3",
+      "name": "Send Urgent Alert Email",
+      "webhookId": "db11fef4-fed8-4cc6-b990-477368beafae",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "qArxkDXBnuNhnUXb",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, message: 'Complaint received and escalated. Our team will contact you shortly.', sentiment: $('Log to Google Sheets').item.json['AI:sentiment'] }) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        112,
+        208
+      ],
+      "id": "e87f413a-e5ea-4b05-88ed-cbfd2abbe9fd",
+      "name": "Respond — Angry (Escalated)"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, message: 'Thank you for reaching out. We have received your complaint and will get back to you soon.', sentiment: $('Log to Google Sheets').item.json['AI:sentiment'] }) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -128,
+        416
+      ],
+      "id": "8f0d8d06-50da-45d6-9e78-c6596a9f6845",
+      "name": "Respond — Standard"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-4o-mini",
+        "options": {
+          "maxTokens": 500
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -1200,
+        576
+      ],
+      "id": "d8ebd578-633f-4727-99a5-696278b676d1",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "c0Het3rkd24gtNR4",
+          "name": "OpenRouter account"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "host": "ayush24.app.n8n.cloud",
+            "user-agent": "Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.70.5)",
+            "content-length": "137",
+            "accept": "*/*",
+            "accept-encoding": "gzip, br",
+            "accept-language": "*",
+            "cdn-loop": "cloudflare; loops=1; subreqs=1",
+            "cf-connecting-ip": "2406:da1a:c77:d400:42a6:1bd6:877f:870",
+            "cf-ew-via": "15",
+            "cf-ipcountry": "IN",
+            "cf-ray": "9d4dad7f2d2d6ef4-BOM",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "cf-worker": "n8n.cloud",
+            "content-type": "application/json",
+            "x-forwarded-for": "2406:da1a:c77:d400:42a6:1bd6:877f:870, 162.158.227.214",
+            "x-forwarded-host": "ayush24.app.n8n.cloud",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "traefik-prod-users-gwc-69-5b9dd78d9-xjftg",
+            "x-is-trusted": "yes",
+            "x-real-ip": "2406:da1a:c77:d400:42a6:1bd6:877f:870"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "body": {
+              "body": {
+                "data": {
+                  "fields": [
+                    {
+                      "value": "PodeAppa"
+                    },
+                    {
+                      "value": "apsingekarpadmaksh@gmail.com"
+                    },
+                    {
+                      "value": "to less battery back up"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "webhookUrl": "https://ayush24.app.n8n.cloud/webhook/sales-complaint",
+          "executionMode": "production"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Classify Complaint with LLM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify Complaint with LLM": {
+      "main": [
+        [
+          {
+            "node": "Process and Override Sentiment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process and Override Sentiment": {
+      "main": [
+        [
+          {
+            "node": "Log to Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log to Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Is Angry?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Angry?": {
+      "main": [
+        [
+          {
+            "node": "Send Urgent Alert Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond — Standard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Urgent Alert Email": {
+      "main": [
+        [
+          {
+            "node": "Respond — Angry (Escalated)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Classify Complaint with LLM",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "c153e1a6-5c0b-44a1-bad1-823057066709",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "fe45cd4e02e617326550e992fbc2b3658d75c03bf0882aa0182f05f16c433877"
+  },
+  "id": "ZE4irTgFq7M6bHYk",
+  "tags": []
+}

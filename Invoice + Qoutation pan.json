@@ -1,0 +1,531 @@
+{
+  "name": "Invoice + Qoutation",
+  "nodes": [
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1tDsJAkS1zccKbCahUo8F0hAnGCgJ6pTMDit979Ucsw4",
+          "mode": "list",
+          "cachedResultName": "Stocklist",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1tDsJAkS1zccKbCahUo8F0hAnGCgJ6pTMDit979Ucsw4/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1clVno7_Hc7PRqdTHND8PwEYHUUzFix7a_OXtYFeTm4E/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ProductName                                   ",
+              "lookupValue": "={{ $json.body.body.data.fields[3].options[0].text }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -768,
+        288
+      ],
+      "id": "a2d842d8-0d5f-4e6f-98c6-70eb33fc9258",
+      "name": "Get row(s) in sheet",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "RR9cDB7wNsNDx8Kl",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "96ddf5ab-7cdb-4ccb-a05d-1cd4e684e5da",
+              "name": "invoiceHTML",
+              "value": "=<div style=\"font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; border: 1px solid #ddd; padding: 25px; border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.05);\">\n    \n    <div style=\"text-align: center; margin-bottom: 20px;\">\n        <img src=\"https://drive.google.com/uc?export=view&id=1Xub1UZjnVx9niAeDTMJl9RuFarI2lZtJ\" alt=\"Unorthodox Logo\" style=\"width: 180px; height: auto;\">\n    </div>\n\n    <h2 style=\"color: #1a73e8; text-align: center; margin-bottom: 20px;\">INVOICE</h2>\n    \n    <div style=\"margin-bottom: 20px;\">\n        <p style=\"margin: 5px 0;\"><strong>Customer:</strong> {{ $('Webhook').item.json.body.customer_name }} </p>\n        <p style=\"margin: 5px 0; color: #666;\">Processed by Unorthodox AI Workflow</p>\n    </div>\n\n    <table style=\"width: 100%; border-collapse: collapse; margin-top: 10px;\">\n        <thead>\n            <tr style=\"background-color: #f1f3f4; border-bottom: 2px solid #ddd;\">\n                <th style=\"padding: 12px; text-align: left;\">Product Details</th>\n                <th style=\"padding: 12px; text-align: center;\">Qty</th>\n                <th style=\"padding: 12px; text-align: right;\">Unit Price</th>\n                <th style=\"padding: 12px; text-align: right;\">Total</th>\n            </tr>\n        </thead>\n        <tbody>\n            <tr>\n                <td style=\"padding: 12px; border-bottom: 1px solid #eee;\"> {{ $('Webhook').item.json.body.product_name }}</td>\n                <td style=\"padding: 12px; border-bottom: 1px solid #eee; text-align: center;\">{{ $('Webhook').item.json.body.quantity }}</td>\n                <td style=\"padding: 12px; border-bottom: 1px solid #eee; text-align: right;\">₹{{ $('Webhook').item.json.body.unit_price }}</td>\n                <td style=\"padding: 12px; border-bottom: 1px solid #eee; text-align: right; font-weight: bold;\">\n                    ₹{{ $('Webhook').item.json.body.total_price }}\n                </td>\n            </tr>\n        </tbody>\n    </table>\n\n    <div style=\"text-align: right; margin-top: 20px;\">\n        <h3 style=\"color: #d93025; font-size: 20px;\">Total Due: ₹{{ $('Webhook').item.json.body.total_price }}</h3>\n    </div>\n\n    <hr style=\"border: 0; border-top: 1px solid #eee; margin: 30px 0 15px 0;\">\n    <p style=\"text-align: center; font-size: 13px; color: #888;\">\n        This is an automated invoice generated via n8n & Tally. Thank you!\n    </p>\n</div>",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -80,
+        160
+      ],
+      "id": "afe40a56-81ed-431d-8ad8-83e463a8cff8",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Webhook').item.json.body.customer_email }}",
+        "subject": "Invoice for your order",
+        "message": "={{ $json.invoiceHTML }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        80,
+        160
+      ],
+      "id": "25dcfce0-5570-4a11-a4d6-7e30319fff02",
+      "name": "Send a message",
+      "webhookId": "98c1693f-ffb1-41f7-8398-826bce6dbb7c",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "qArxkDXBnuNhnUXb",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "812bbca4-2f96-408e-9b8c-d6930fce2b3d",
+              "leftValue": "={{ $('Webhook').item.json.body.body.data.fields[3].options[0].text }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -608,
+        288
+      ],
+      "id": "1e224d62-4876-44c5-a742-66200b8978fe",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "generate-invoice",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1248,
+        304
+      ],
+      "id": "06e3e8df-35d3-4d1d-a395-2e3718d684bc",
+      "name": "Webhook",
+      "webhookId": "7ce5fe37-6113-446d-8908-bd446bdc7fb6"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "6ad052e6-c47d-4998-b4f9-c3028c999dbb",
+              "leftValue": "={{ $json['ProductName                                   '] }}",
+              "rightValue": "=",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -624,
+        656
+      ],
+      "id": "acf15a62-51cc-486f-ae25-69970fbf67f2",
+      "name": "If2"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1tDsJAkS1zccKbCahUo8F0hAnGCgJ6pTMDit979Ucsw4",
+          "mode": "list",
+          "cachedResultName": "Stocklist",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1tDsJAkS1zccKbCahUo8F0hAnGCgJ6pTMDit979Ucsw4/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1tDsJAkS1zccKbCahUo8F0hAnGCgJ6pTMDit979Ucsw4/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ProductName                                   ",
+              "lookupValue": "={{ $('Webhook').item.json.body.product_name }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -800,
+        544
+      ],
+      "id": "e9276b8b-c85a-4bec-9443-de3c78aa8b01",
+      "name": "Google Sheets1",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "RR9cDB7wNsNDx8Kl",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Webhook').item.json.body.customer_email }}",
+        "subject": "=Quotation for: {{ $('Webhook').item.json.body.product_name }}",
+        "message": "={{ $json.html }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        -224,
+        560
+      ],
+      "id": "bfe39051-7e1e-467e-9061-3db86a2b5e2e",
+      "name": "Send a message4",
+      "webhookId": "60603d52-2df0-4a58-a7d9-b80c5c9b9167",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "qArxkDXBnuNhnUXb",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Webhook').item.json.body.customer_email }}",
+        "subject": "=Regarding your inquiry: {{ $('Webhook').item.json.body.product_name }}",
+        "message": "=Hi {{ $('Webhook').item.json.body.customer_name }},  Thank you for reaching out! We received your request for a quote on '{{ $('Webhook').item.json.body.product_name }}'.  Unfortunately, we couldn't find an exact match for this item in our current catalog. Could you please double-check the product name or provide a model number?  Alternatively, reply to this email and one of our team members will assist you manually.",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        -224,
+        768
+      ],
+      "id": "c734c761-2f3d-4587-9c67-cb26d57615c7",
+      "name": "Send a message5",
+      "webhookId": "5b9b6b02-e835-4be1-87d5-126fea7e39b5",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "qArxkDXBnuNhnUXb",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5bb39336-37f1-4a11-bb8e-7f743477ba35",
+              "name": "html",
+              "value": "=<div style=\"font-family: Arial, sans-serif; border: 1px solid #ddd; padding: 20px; max-width: 600px; margin: auto; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.05);\">\n  \n  <div style=\"text-align: center; margin-bottom: 20px;\">\n    <img src=\"https://sl.bing.net/gp2j5xFykx2\" alt=\"Unorthodox Logo\" style=\"width: 180px; height: auto;\">\n  </div>\n\n  <h2 style=\"color: #2c3e50; text-align: center; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-top: 0;\">Official Quotation</h2>\n  \n  <p>Hi {{ $('Webhook').item.json.body.customer_name }}<strong> </strong>,</p>\n  <p>Thank you for your inquiry. Here are the details for your requested items:</p>\n  \n  <table style=\"width: 100%; border-collapse: collapse; margin-top: 15px;\">\n    <tr style=\"background-color: #f8f9fa;\">\n      <th style=\"text-align: left; padding: 8px; border-bottom: 1px solid #ddd;\">Product</th>\n      <th style=\"text-align: right; padding: 8px; border-bottom: 1px solid #ddd;\">Qty</th>\n      <th style=\"text-align: right; padding: 8px; border-bottom: 1px solid #ddd;\">Unit Price</th>\n    </tr>\n    <tr>\n      <td style=\"padding: 8px; border-bottom: 1px solid #ddd;\">{{ $('Google Sheets1').item.json['ProductName                                   '] }}</td>\n      <td style=\"padding: 8px; text-align: right; border-bottom: 1px solid #ddd;\"> {{ $('Webhook').item.json.body.quantity }} </td>\n      <td style=\"padding: 8px; text-align: right; border-bottom: 1px solid #ddd;\">₹{{ $node[\"Google Sheets1\"].json[\"Price\"] }}</td>\n    </tr>\n    <tr>\n      <td colspan=\"2\" style=\"padding: 8px; text-align: right;\"><strong>Estimated Total:</strong></td>\n      <td style=\"padding: 8px; text-align: right; color: #1a73e8; font-size: 1.1em;\"><strong>₹{{ $('Webhook').item.json.body.total_price }}</strong></td>\n    </tr>\n  </table>\n  \n  <div style=\"background-color: #fff9db; padding: 10px; border-radius: 8px; margin-top: 20px; border: 1px solid #f59f00;\">\n    <p style=\"margin: 0; font-size: 0.9em; color: #856404; text-align: center;\">\n      <strong>Note:</strong> Currently {{ $node[\"Google Sheets1\"].json[\"QuantityInStock\"] }} units available in stock.\n    </p>\n  </div>\n  \n  <p style=\"margin-top: 20px; font-size: 0.85em; color: #7f8c8d; text-align: center;\">\n    <em>This is an automated quotation generated by the Unorthodox AI Workflow. Valid for 7 days.</em>\n  </p>\n</div>",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -432,
+        560
+      ],
+      "id": "f900e8ae-a231-48dd-b405-496ea4046856",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "827dbe65-3242-465c-a4c2-9759fb0b93d1",
+              "leftValue": "=buy",
+              "rightValue": "={{ $json.body.body.data.fields[2].value }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -944,
+        304
+      ],
+      "id": "22e576ca-0a8d-4398-9401-5ae7c8c7c71e",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "07ae4b99-19ea-47c5-843d-eefc5b441381",
+              "leftValue": "={{ $('Webhook').item.json.body.body.data.fields[4].value }}",
+              "rightValue": "={{ $('Get row(s) in sheet').item.json.QuantityInStock }}",
+              "operator": {
+                "type": "number",
+                "operation": "lte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -368,
+        176
+      ],
+      "id": "72eede34-6e7f-4294-8350-a47948f8d665",
+      "name": "If3"
+    }
+  ],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "host": "techy.app.n8n.cloud",
+            "user-agent": "Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.70.3)",
+            "content-length": "357",
+            "accept": "*/*",
+            "accept-encoding": "gzip, br",
+            "accept-language": "*",
+            "cdn-loop": "cloudflare; loops=1; subreqs=1",
+            "cf-connecting-ip": "2406:da1a:c77:d407:6ea0:c920:62bf:7957",
+            "cf-ew-via": "15",
+            "cf-ipcountry": "IN",
+            "cf-ray": "9d26224032bf95ae-BOM",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "cf-worker": "n8n.cloud",
+            "content-type": "application/json",
+            "x-forwarded-for": "2406:da1a:c77:d407:6ea0:c920:62bf:7957, 172.71.198.72",
+            "x-forwarded-host": "techy.app.n8n.cloud",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "traefik-prod-users-gwc-117-54c9d54758-l75bb",
+            "x-is-trusted": "yes",
+            "x-real-ip": "2406:da1a:c77:d407:6ea0:c920:62bf:7957"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "order_id": "SA-20260223-1596",
+            "product_id": "d3cd145c-48cf-40ca-8c64-75fec826a54f",
+            "product_name": "Induction Cooktop",
+            "quantity": 3,
+            "unit_price": 750,
+            "total_price": 2250,
+            "customer_name": "Techy Boyz",
+            "customer_email": "tula.kay.karaych1@gmail.com",
+            "shipping_address": "MCOE PUNE",
+            "special_instructions": "HBD AMIT",
+            "user_id": "b7e99754-79a6-4b92-84d3-88bfa4e997cc"
+          },
+          "webhookUrl": "https://techy.app.n8n.cloud/webhook/generate-invoice",
+          "executionMode": "production"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "If3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If2": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a message5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets1": {
+      "main": [
+        [
+          {
+            "node": "If2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Send a message4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Google Sheets1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If3": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "2de55eaf-992b-4f90-a7c9-32a8e26a323f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "fe45cd4e02e617326550e992fbc2b3658d75c03bf0882aa0182f05f16c433877"
+  },
+  "id": "kktIAHs9ZJgBMgx3",
+  "tags": []
+}
